@@ -1,0 +1,207 @@
+/* Bass Guitar Module Styles */
+.bass-module {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.bass-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.bass-head {
+    width: 100%;
+    position: relative;
+    background-color: #8B4513; /* Wood color */
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bass-nut {
+    height: 8px;
+    width: 100%;
+    background-color: #FFFFF0; /* Ivory */
+    border-radius: 2px;
+    margin-bottom: 10px;
+}
+
+.bass-fretboard {
+    position: relative;
+    width: 100%;
+    min-height: 140px;
+    background-color: #6b4423; /* Darker wood for fretboard */
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Fret markers (dots on the fretboard) */
+.fret-markers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.fret-marker {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #FFFFF0; /* Ivory */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.fret-marker[data-fret="3"] {
+    left: 25%;
+}
+
+.fret-marker[data-fret="5"] {
+    left: 38%;
+}
+
+.fret-marker[data-fret="7"] {
+    left: 50%;
+}
+
+.fret-marker[data-fret="9"] {
+    left: 63%;
+}
+
+.fret-marker.double[data-fret="12"] {
+    left: 80%;
+    width: 10px;
+    height: 10px;
+    box-shadow: 0 -15px 0 #FFFFF0, 0 15px 0 #FFFFF0; /* Creates double dots */
+}
+
+/* Frets (the metal bars) */
+.frets {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.fret {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    border-right: 2px solid #D0D0D0; /* Silver color for fret wire */
+}
+
+.fret:first-child {
+    border-left: none;
+}
+
+.fret:last-child {
+    border-right: 4px solid #D0D0D0; /* Thicker last fret */
+}
+
+.bass-strings-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 140px;
+    justify-content: space-between;
+    padding: 10px 0;
+    z-index: 3; /* Ensure strings are above frets */
+}
+
+.bass-string {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.string-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: #C0C0C0; /* Silver */
+    transition: height 0.05s, background-color 0.05s;
+    z-index: 1;
+}
+
+.bass-string:nth-child(1) .string-line {
+    height: 5px; /* E string is thicker */
+    background-color: #A0A0A0;
+}
+
+.bass-string:nth-child(2) .string-line {
+    height: 4px; /* A string */
+    background-color: #B0B0B0;
+}
+
+.bass-string:nth-child(3) .string-line {
+    height: 3px; /* D string */
+    background-color: #C0C0C0;
+}
+
+.bass-string:nth-child(4) .string-line {
+    height: 2px; /* G string */
+    background-color: #D0D0D0;
+}
+
+.string-notes {
+    position: absolute;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+}
+
+.note-position {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.note-position:hover {
+    background-color: rgba(79, 142, 255, 0.3);
+}
+
+.note-position.active {
+    background-color: rgba(79, 142, 255, 0.7);
+}
+
+.bass-string.active .string-line {
+    background-color: #4f8eff; /* Highlight color when playing */
+    box-shadow: 0 0 10px #4f8eff;
+}
+
+.bass-info {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.bass-info p {
+    margin: 5px 0;
+}
+
+#current-bass-note {
+    font-weight: bold;
+    color: #4f8eff;
+} 
