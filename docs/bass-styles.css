@@ -140,26 +140,27 @@
 /* Fretless note position indicators */
 .note-dot {
     position: absolute;
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background-color: rgba(79, 142, 255, 0.5);
+    background-color: rgba(79, 142, 255, 0.6);
     top: 50%;
     transform: translate(-50%, -50%); /* Center the dot on its position */
     z-index: 10;
-    transition: all 0.1s; /* Faster transition for more immediate feedback */
+    transition: transform 0.05s, width 0.05s, height 0.05s; /* Faster transition for immediate feedback */
     pointer-events: none; /* Let click events pass through to the string */
     opacity: 0;
-    /* Add subtle drop shadow for better visibility */
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    /* Add drop shadow for better visibility against the dark fretboard */
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 
 .note-dot.active {
     opacity: 1;
     background-color: #4f8eff;
-    box-shadow: 0 0 8px #4f8eff;
-    width: 14px;
-    height: 14px;
+    box-shadow: 0 0 10px #4f8eff, 0 0 5px rgba(255, 255, 255, 0.8);
+    transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
+    width: 16px;
+    height: 16px;
 }
 
 /* String activation effects */

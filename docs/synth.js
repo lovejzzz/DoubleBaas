@@ -1402,26 +1402,47 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add mouse and touch event listeners for fretless string playing
             stringEl.addEventListener('mousedown', (e) => {
-                // Calculate the position on the string
+                // Use a more accurate position calculation
+                // Get the string rect
                 const rect = stringEl.getBoundingClientRect();
+                
                 // Account for the nut width in the calculation
                 const nutWidth = 30; // Width of the nut in pixels
-                // Calculate relative position, excluding the nut area
+                
+                // Calculate the horizontal position along the string
+                // Ensure we're only counting the part of the string to the right of the nut
                 const position = (e.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
-                // Ensure position is between 0 and 1
+                
+                // Clamp position between 0 and 1
                 const clampedPosition = Math.max(0, Math.min(1, position));
-                playFretlessNote(stringIndex, clampedPosition);
+                
+                // Detect if click is actually on the string line (with some tolerance)
+                const clickY = e.clientY;
+                const stringCenterY = rect.top + (rect.height / 2);
+                const stringThickness = stringIndex === 3 ? 2 : 
+                                      stringIndex === 2 ? 3 : 
+                                      stringIndex === 1 ? 4 : 5;
+                const tolerance = Math.max(12, stringThickness + 8); // Larger tolerance for easier clicking
+                
+                // Only trigger note if click is near the string
+                if (Math.abs(clickY - stringCenterY) <= tolerance) {
+                    playFretlessNote(stringIndex, clampedPosition);
+                }
             });
             
             stringEl.addEventListener('mousemove', (e) => {
                 // Only handle slides if the mouse button is pressed
                 if (e.buttons === 1) {
+                    // Use the same accurate position calculation as mousedown
                     const rect = stringEl.getBoundingClientRect();
+                    
                     // Account for the nut width in the calculation
                     const nutWidth = 30; // Width of the nut in pixels
-                    // Calculate relative position, excluding the nut area
+                    
+                    // Calculate the horizontal position along the string
                     const position = (e.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
-                    // Ensure position is between 0 and 1
+                    
+                    // Clamp position between 0 and 1
                     const clampedPosition = Math.max(0, Math.min(1, position));
                     
                     // Update the position of the active note
@@ -1439,29 +1460,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 releaseFretlessNote(stringIndex);
             });
             
-            // Touch support
+            // Touch support with similar improvements
             stringEl.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = stringEl.getBoundingClientRect();
+                
                 // Account for the nut width in the calculation
                 const nutWidth = 30; // Width of the nut in pixels
-                // Calculate relative position, excluding the nut area
+                
+                // Calculate the horizontal position along the string
                 const position = (touch.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
-                // Ensure position is between 0 and 1
+                
+                // Clamp position between 0 and 1
                 const clampedPosition = Math.max(0, Math.min(1, position));
-                playFretlessNote(stringIndex, clampedPosition);
+                
+                // Detect if touch is actually on the string line (with some tolerance)
+                const touchY = touch.clientY;
+                const stringCenterY = rect.top + (rect.height / 2);
+                const stringThickness = stringIndex === 3 ? 2 : 
+                                      stringIndex === 2 ? 3 : 
+                                      stringIndex === 1 ? 4 : 5;
+                const tolerance = Math.max(15, stringThickness + 10); // Larger tolerance for touch
+                
+                // Only trigger note if touch is near the string
+                if (Math.abs(touchY - stringCenterY) <= tolerance) {
+                    playFretlessNote(stringIndex, clampedPosition);
+                }
             });
             
             stringEl.addEventListener('touchmove', (e) => {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = stringEl.getBoundingClientRect();
+                
                 // Account for the nut width in the calculation
                 const nutWidth = 30; // Width of the nut in pixels
-                // Calculate relative position, excluding the nut area
+                
+                // Calculate the horizontal position along the string
                 const position = (touch.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
-                // Ensure position is between 0 and 1
+                
+                // Clamp position between 0 and 1
                 const clampedPosition = Math.max(0, Math.min(1, position));
                 
                 // Update the position of the active note
@@ -1634,11 +1673,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!noteDot) return;
         
         // Position is already normalized from 0-1 in the event handlers
-        // Convert directly to percentage for CSS
+        // We can use it directly to calculate the percentage position
+        
+        // Make sure the dot is positioned based on the clickable area
+        // Account for the nut section width (30px)
         const positionPercent = position * 100;
         
-        // Set the position directly - CSS transform: translate(-50%, -50%) handles centering
+        // Center the dot horizontally on exactly the position where the user clicked
         noteDot.style.left = `${positionPercent}%`;
+        
+        // Center the dot vertically on the string
+        noteDot.style.top = '50%';
+        
+        // Log position for debugging
+        console.log(`Note dot placed at position: ${positionPercent}% on string ${stringIndex}`);
     }
     
     // Function to release a fretless note
