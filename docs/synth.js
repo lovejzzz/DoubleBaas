@@ -1409,12 +1409,15 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let fret = 0; fret < numFrets; fret++) {
                 // Special case for E string (index 0) first fret to display F instead of F#
                 let noteValue;
+                let noteName;
+                
                 if (stringIndex === 0 && fret === 1) {
                     noteValue = 29; // F note instead of F#
+                    noteName = "F1"; // Explicitly set to F1
                 } else {
                     noteValue = baseNote + fret;
+                    noteName = calculateNoteName(noteValue);
                 }
-                const noteName = calculateNoteName(noteValue);
                 
                 const notePosition = document.createElement('div');
                 notePosition.className = 'note-position';
@@ -1424,6 +1427,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Store the string index directly to avoid confusion
                 notePosition.dataset.stringIndex = stringIndex;
+                
+                // For debugging - add visible text for the note names on fret position 1
+                if (fret === 1) {
+                    // Create a small label element
+                    const debugLabel = document.createElement('span');
+                    debugLabel.className = 'debug-note-name';
+                    debugLabel.style.fontSize = '8px';
+                    debugLabel.style.color = 'rgba(255, 255, 255, 0.5)';
+                    debugLabel.style.position = 'absolute';
+                    debugLabel.style.bottom = '2px';
+                    debugLabel.style.left = '2px';
+                    debugLabel.style.pointerEvents = 'none';
+                    debugLabel.textContent = noteName;
+                    notePosition.appendChild(debugLabel);
+                }
                 
                 // Add event listeners
                 notePosition.addEventListener('mousedown', (e) => {
@@ -1477,13 +1495,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseNote = bassStringNotes[stringIndex];
         // Special case for E string (index 0) first fret to play F instead of F#
         let midiNote;
+        let noteName;
+        
         if (stringIndex === 0 && fret === 1) {
             // F note (29) instead of F# (30)
             midiNote = 29;
+            noteName = "F1"; // Explicitly set to F1
         } else {
             midiNote = baseNote + fret;
+            noteName = calculateNoteName(midiNote);
         }
-        const noteName = calculateNoteName(midiNote);
         
         // Find the note element using the data attributes
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
@@ -1580,8 +1601,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to calculate note name from MIDI note number
     function calculateNoteName(midiNote) {
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        // Standard formula for MIDI note conversion
         const octave = Math.floor(midiNote / 12) - 1;
-        const noteName = noteNames[midiNote % 12];
+        const noteIndex = midiNote % 12;
+        const noteName = noteNames[noteIndex];
+        
+        // Special case for the E1-F1 boundary
+        if (midiNote === 29) {
+            return "F1"; // Explicitly handle MIDI note 29 as F1
+        }
+        
         return noteName + octave;
     }
 
