@@ -1448,59 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Set up open string markers handlers
-        const openStringMarkers = document.querySelectorAll('.open-string-marker');
-        openStringMarkers.forEach(markerEl => {
-            const stringIndex = parseInt(markerEl.dataset.string, 10);
-            
-            // Add mouse events
-            markerEl.addEventListener('mousedown', () => {
-                playOpenString(stringIndex);
-            });
-            
-            markerEl.addEventListener('mouseup', () => {
-                releaseOpenString(stringIndex);
-            });
-            
-            markerEl.addEventListener('mouseleave', () => {
-                releaseOpenString(stringIndex);
-            });
-            
-            // Add touch events
-            markerEl.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                playOpenString(stringIndex);
-            });
-            
-            markerEl.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                releaseOpenString(stringIndex);
-            });
-        });
-        
         console.log('Bass fretboard initialized with notes');
-    }
-    
-    // Function to play open string (0th fret)
-    function playOpenString(stringIndex) {
-        playBassNote(stringIndex, 0);
-        
-        // Add active class to the open string marker element
-        const openStringEl = document.querySelector(`.open-string-marker[data-string="${stringIndex}"]`);
-        if (openStringEl) {
-            openStringEl.classList.add('active');
-        }
-    }
-    
-    // Function to release open string
-    function releaseOpenString(stringIndex) {
-        releaseBassNote(stringIndex, 0);
-        
-        // Remove active class from the open string marker element
-        const openStringEl = document.querySelector(`.open-string-marker[data-string="${stringIndex}"]`);
-        if (openStringEl) {
-            openStringEl.classList.remove('active');
-        }
     }
     
     // Call the initialization function
@@ -1607,5 +1555,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const octave = Math.floor(midiNote / 12) - 1;
         const noteName = noteNames[midiNote % 12];
         return noteName + octave;
+    }
+
+    // Set up event listeners for the open strings
+    const openStrings = document.querySelectorAll('.open-string');
+    openStrings.forEach(openString => {
+        const stringIndex = parseInt(openString.dataset.string, 10);
+        
+        // Add mousedown/up handlers for open strings
+        openString.addEventListener('mousedown', () => {
+            playOpenString(stringIndex);
+        });
+        
+        openString.addEventListener('mouseup', () => {
+            releaseOpenString(stringIndex);
+        });
+        
+        openString.addEventListener('mouseleave', () => {
+            releaseOpenString(stringIndex);
+        });
+        
+        // Touch support
+        openString.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            playOpenString(stringIndex);
+        });
+        
+        openString.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            releaseOpenString(stringIndex);
+        });
+    });
+    
+    // Function to play an open string (fret 0)
+    function playOpenString(stringIndex) {
+        playBassNote(stringIndex, 0);
+        // Add active class to the open string element
+        const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        if (openString) {
+            openString.classList.add('active');
+        }
+    }
+    
+    // Function to release an open string
+    function releaseOpenString(stringIndex) {
+        releaseBassNote(stringIndex, 0);
+        // Remove active class from the open string element
+        const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        if (openString) {
+            openString.classList.remove('active');
+        }
     }
 });

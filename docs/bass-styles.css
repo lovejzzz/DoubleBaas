@@ -12,7 +12,6 @@
     justify-content: center;
     height: 100%;
     padding: 20px;
-    position: relative; /* Added for absolute positioning of children */
 }
 
 .bass-head {
@@ -21,64 +20,15 @@
     background-color: #8B4513; /* Wood color */
     border-radius: 10px;
     padding: 15px;
-    padding-left: 55px; /* Make room for the open strings section */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    margin-left: 40px; /* Make room for the open strings section */
 }
 
 .bass-nut {
-    height: 20px; /* Increased height to accommodate string labels */
+    height: 8px;
     width: 100%;
     background-color: #FFFFF0; /* Ivory */
     border-radius: 2px;
     margin-bottom: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    cursor: pointer;
-    position: relative;
-}
-
-/* Open string markers on the nut */
-.open-string-marker {
-    position: absolute;
-    font-weight: bold;
-    color: #8B4513; /* Wood color for contrast against ivory nut */
-    font-size: 14px;
-    text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.3);
-    height: 20px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    transition: color 0.1s, text-shadow 0.1s;
-    left: -25px; /* Position to the left of the nut */
-}
-
-.open-string-marker:hover {
-    color: #4f8eff;
-    text-shadow: 0 0 3px rgba(79, 142, 255, 0.5);
-}
-
-.open-string-marker.active {
-    color: #4f8eff;
-    text-shadow: 0 0 5px rgba(79, 142, 255, 0.8);
-}
-
-/* Position each string marker correctly */
-.open-string-marker[data-string="3"] {
-    top: 0%;
-}
-
-.open-string-marker[data-string="2"] {
-    top: 25%;
-}
-
-.open-string-marker[data-string="1"] {
-    top: 50%;
-}
-
-.open-string-marker[data-string="0"] {
-    top: 75%;
 }
 
 .bass-fretboard {
@@ -90,6 +40,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding-left: 30px; /* Add space for the nut */
 }
 
 /* Fret markers (dots on the fretboard) */
@@ -256,7 +207,41 @@
     color: #4f8eff;
 }
 
-/* Highlight nut to show it's clickable */
-.bass-nut:hover {
-    box-shadow: 0 0 10px rgba(79, 142, 255, 0.5);
+/* Bass open strings (nut) section */
+.bass-open-strings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 100%;
+    background-color: #FFFFF0; /* Ivory color for the nut */
+    border-right: 2px solid #A0A0A0;
+    border-radius: 4px 0 0 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 0;
+    z-index: 4; /* Above strings and frets */
+}
+
+.open-string {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.open-string:hover {
+    background-color: rgba(79, 142, 255, 0.3);
+}
+
+.open-string.active {
+    background-color: rgba(79, 142, 255, 0.7);
+    color: white;
 } 
