@@ -1404,19 +1404,29 @@ document.addEventListener('DOMContentLoaded', () => {
             stringEl.addEventListener('mousedown', (e) => {
                 // Calculate the position on the string
                 const rect = stringEl.getBoundingClientRect();
-                const position = (e.clientX - rect.left) / rect.width;
-                playFretlessNote(stringIndex, position);
+                // Account for the nut width in the calculation
+                const nutWidth = 30; // Width of the nut in pixels
+                // Calculate relative position, excluding the nut area
+                const position = (e.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
+                // Ensure position is between 0 and 1
+                const clampedPosition = Math.max(0, Math.min(1, position));
+                playFretlessNote(stringIndex, clampedPosition);
             });
             
             stringEl.addEventListener('mousemove', (e) => {
                 // Only handle slides if the mouse button is pressed
                 if (e.buttons === 1) {
                     const rect = stringEl.getBoundingClientRect();
-                    const position = (e.clientX - rect.left) / rect.width;
+                    // Account for the nut width in the calculation
+                    const nutWidth = 30; // Width of the nut in pixels
+                    // Calculate relative position, excluding the nut area
+                    const position = (e.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
+                    // Ensure position is between 0 and 1
+                    const clampedPosition = Math.max(0, Math.min(1, position));
                     
                     // Update the position of the active note
                     if (activeStringElements.has(stringIndex)) {
-                        updateFretlessNotePosition(stringIndex, position);
+                        updateFretlessNotePosition(stringIndex, clampedPosition);
                     }
                 }
             });
@@ -1434,19 +1444,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = stringEl.getBoundingClientRect();
-                const position = (touch.clientX - rect.left) / rect.width;
-                playFretlessNote(stringIndex, position);
+                // Account for the nut width in the calculation
+                const nutWidth = 30; // Width of the nut in pixels
+                // Calculate relative position, excluding the nut area
+                const position = (touch.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
+                // Ensure position is between 0 and 1
+                const clampedPosition = Math.max(0, Math.min(1, position));
+                playFretlessNote(stringIndex, clampedPosition);
             });
             
             stringEl.addEventListener('touchmove', (e) => {
                 e.preventDefault();
                 const touch = e.touches[0];
                 const rect = stringEl.getBoundingClientRect();
-                const position = (touch.clientX - rect.left) / rect.width;
+                // Account for the nut width in the calculation
+                const nutWidth = 30; // Width of the nut in pixels
+                // Calculate relative position, excluding the nut area
+                const position = (touch.clientX - (rect.left + nutWidth)) / (rect.width - nutWidth);
+                // Ensure position is between 0 and 1
+                const clampedPosition = Math.max(0, Math.min(1, position));
                 
                 // Update the position of the active note
                 if (activeStringElements.has(stringIndex)) {
-                    updateFretlessNotePosition(stringIndex, position);
+                    updateFretlessNotePosition(stringIndex, clampedPosition);
                 }
             });
             
@@ -1613,12 +1633,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const noteDot = stringElement.querySelector('.note-dot');
         if (!noteDot) return;
         
-        // Adjust the left position to be proportional to the string length
-        // Add a small offset from the nut (5% of string length)
-        const adjustedPosition = 0.05 + (position * 0.90);
+        // Position is already normalized from 0-1 in the event handlers
+        // Convert directly to percentage for CSS
+        const positionPercent = position * 100;
         
-        // Set the position
-        noteDot.style.left = `${adjustedPosition * 100}%`;
+        // Set the position directly - CSS transform: translate(-50%, -50%) handles centering
+        noteDot.style.left = `${positionPercent}%`;
     }
     
     // Function to release a fretless note

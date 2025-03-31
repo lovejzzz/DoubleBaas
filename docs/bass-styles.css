@@ -145,11 +145,13 @@
     border-radius: 50%;
     background-color: rgba(79, 142, 255, 0.5);
     top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%); /* Center the dot on its position */
     z-index: 10;
-    transition: all 0.2s;
+    transition: all 0.1s; /* Faster transition for more immediate feedback */
     pointer-events: none; /* Let click events pass through to the string */
     opacity: 0;
+    /* Add subtle drop shadow for better visibility */
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
 .note-dot.active {
