@@ -2,7 +2,7 @@
 
 A browser-based monophonic synthesizer inspired by classic analog synthesizers, built with Web Audio API (Tone.js).
 
-![Web SEM Synth](title.png)
+![Web SEM Synth](docs/title.png)
 
 ## Features
 
