@@ -738,39 +738,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleNoteOff(note) {
-        if (!ampEnv || !filterEnv) {
-            console.error('Cannot release note - envelopes not initialized');
+        // For microtonal notes, convert to the nearest integer
+        const roundedNote = Math.round(note);
+        
+        // Check if the note is active before proceeding
+        if (!activeNotes.has(roundedNote) && !activeNotes.has(note)) {
+            // If the exact note or its rounded version is not active, log and exit
+            console.log(`Note off for inactive note: ${note.toFixed(2)} (rounded: ${roundedNote})`);
             return;
         }
-
-        try {
-            console.log(`Releasing note ${note}`);
-            
-            // Remove note from active set
-            activeNotes.delete(note);
-            
-            // Only release envelopes if this was the last/current note
-            if (activeNotes.size === 0 || note === currentNote) {
-                console.log('Last/current note released, triggering envelope release');
-                
-                // Get the current time
-                const now = Tone.now();
-                
-                // Make sure curves are exponential for smoother release
-                ampEnv.releaseCurve = 'exponential';
-                filterEnv.releaseCurve = 'exponential';
-                
-                // Use exact time values instead of string offsets
-                // This provides more consistent timing and smoother transitions
-                filterEnv.triggerRelease(now);
-                ampEnv.triggerRelease(now);
-                
-                currentNote = null;
-            } else {
-                console.log('Other notes still active, not releasing envelopes');
+        
+        // Remove from active notes
+        activeNotes.delete(note);
+        activeNotes.delete(roundedNote); // Also remove the rounded version
+        
+        // Check if there are no more active notes
+        if (activeNotes.size === 0) {
+            // Start the release phase by triggering the envelopes
+            try {
+                if (filterEnv) {
+                    filterEnv.triggerRelease();
+                }
+                if (ampEnv) {
+                    ampEnv.triggerRelease();
+                }
+                console.log('All notes released, triggered release phase');
+            } catch (error) {
+                console.error('Error triggering release:', error);
             }
-        } catch (error) {
-            console.error('Error in handleNoteOff:', error);
+            
+            // Set currentNote to null to indicate no active notes
+            currentNote = null;
+        } else {
+            console.log(`Note ${note.toFixed(2)} released, ${activeNotes.size} notes still active`);
         }
     }
 
@@ -1510,6 +1510,25 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Get the previous note info
         const previousInfo = activeStringElements.get(stringIndex);
+        if (!previousInfo) return;
+        
+        // If the note has changed by more than 1 cent, handle it as a new note
+        // This prevents stuck notes when sliding
+        const previousMidiNote = previousInfo.midiNote;
+        
+        if (Math.abs(previousMidiNote - midiNote) >= 0.01) {
+            // Release the previous note if it's significantly different
+            handleNoteOff(previousMidiNote);
+            
+            // Trigger the new note with the current velocity
+            handleNoteOn(midiNote, 0.8);
+            
+            // Log the note transition
+            console.log(`Sliding from ${previousMidiNote.toFixed(2)} to ${midiNote.toFixed(2)}`);
+        } else {
+            // For very small movements, just use the pitch bend/glide
+            handleNoteSlide(previousMidiNote, midiNote);
+        }
         
         // Update the active note info with new position and MIDI note
         activeStringElements.set(stringIndex, {
@@ -1518,11 +1537,6 @@ document.addEventListener('DOMContentLoaded', () => {
             stringElement: previousInfo.stringElement,
             noteDot: previousInfo.noteDot
         });
-        
-        // Slide to the new note using glide
-        handleNoteSlide(previousInfo.midiNote, midiNote);
-        
-        console.log(`Sliding fretless note: string ${stringIndex}, position ${position.toFixed(2)}, MIDI note ${midiNote.toFixed(2)} (${noteName})`);
     }
     
     // Actually play the fretless note
@@ -1641,8 +1655,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        // Make sure to cancel any scheduled ramps to avoid stuck notes
+        if (vco1 && vco2) {
+            try {
+                vco1.frequency.cancelScheduledValues(audioContext.currentTime);
+                vco2.frequency.cancelScheduledValues(audioContext.currentTime);
+            } catch (e) {
+                console.warn('Error canceling frequency ramps:', e);
+            }
+        }
+        
         // Trigger note off
         handleNoteOff(midiNote);
+        
+        // For safety, also trigger a global note-off for all active notes
+        // This helps prevent stuck notes when sliding rapidly
+        if (activeNotes.size > 0) {
+            console.log('Cleaning up any potentially stuck notes');
+            const activeNotesArray = Array.from(activeNotes);
+            activeNotesArray.forEach(note => {
+                handleNoteOff(note);
+            });
+            activeNotes.clear();
+        }
         
         console.log(`Released fretless note: string ${stringIndex}, MIDI note ${midiNote.toFixed(2)}`);
     }
@@ -1680,6 +1715,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Handle note sliding (portamento)
     function handleNoteSlide(fromMidiNote, toMidiNote) {
+        // Skip if the notes are identical to prevent unnecessary slides
+        if (fromMidiNote === toMidiNote) return;
+
         // Update oscillator frequencies with glide
         if (vco1 && vco2) {
             const fromFreq = midiToFreq(fromMidiNote);
@@ -1687,8 +1725,30 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Use exponential ramp for more natural pitch slides
             const glideTime = parseFloat(glideSlider.value);
-            vco1.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
-            vco2.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
+            
+            // Ensure the frequencies are valid and positive to avoid errors
+            if (fromFreq > 0 && toFreq > 0) {
+                try {
+                    vco1.frequency.cancelScheduledValues(audioContext.currentTime);
+                    vco2.frequency.cancelScheduledValues(audioContext.currentTime);
+                    
+                    vco1.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
+                    vco2.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
+                    
+                    console.log(`Sliding pitch from ${fromFreq.toFixed(2)}Hz to ${toFreq.toFixed(2)}Hz over ${glideTime}s`);
+                } catch (e) {
+                    console.warn('Error during frequency slide:', e);
+                    
+                    // Fallback to immediate frequency setting
+                    vco1.frequency.value = toFreq;
+                    vco2.frequency.value = toFreq;
+                }
+            } else {
+                // Fallback for invalid frequencies
+                console.warn(`Invalid frequency values for slide: ${fromFreq}, ${toFreq}`);
+                vco1.frequency.value = toFreq > 0 ? toFreq : 440;
+                vco2.frequency.value = toFreq > 0 ? toFreq : 440;
+            }
         }
     }
 
