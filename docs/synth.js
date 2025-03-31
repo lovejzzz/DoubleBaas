@@ -108,9 +108,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            console.log('Setting up audio...');
             await ensureAudioContext();
-            // Rest of setupAudio function remains the same...
-
+            
+            if (audioContext.state !== 'running') {
+                console.error('Audio context is not running, cannot setup audio');
+                throw new Error('Audio context not running');
+            }
+            
             // Initialize displays map
             initializeDisplays();
 
@@ -128,8 +133,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // === Create Audio Nodes ===
             console.log('Creating audio nodes...');
             
-            // Create master volume
-            masterVolume = new Tone.Gain(parseFloat(masterVolumeSlider.value)).toDestination();
+            // Create master volume and connect to output
+            masterVolume = new Tone.Gain(parseFloat(masterVolumeSlider.value));
+            masterVolume.toDestination();
             console.log('Master volume created and connected to destination');
 
             // Create envelopes with better release settings
@@ -150,7 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 release: parseFloat(ampReleaseSlider.value),
                 attackCurve: 'exponential',
                 releaseCurve: 'exponential'
-            }).connect(masterVolume);
+            });
+            ampEnv.connect(masterVolume);
             console.log('Amp envelope created and connected to master volume');
 
             // Create and connect filter chain
@@ -173,9 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             filterSweepXFade = new Tone.CrossFade(parseFloat(filterSweepSlider.value));
             
-            // Connect filters to crossfade, then to amp envelope
+            // Explicitly connect filters to crossfade
             filterLp.connect(filterSweepXFade.a);
             filterHp.connect(filterSweepXFade.b);
+            
+            // Connect crossfade to amp envelope
             filterSweepXFade.connect(ampEnv);
 
             // Set up filter envelope modulation
@@ -248,6 +257,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Start all components with explicit checks
             console.log('Starting audio components...');
+            
+            // First verify all required components exist
+            if (!vco1 || !vco2 || !filterLp || !filterHp || !ampEnv || !filterEnv || !lfo) {
+                throw new Error('Some audio components failed to initialize');
+            }
+            
             try {
                 console.log('Starting LFO...');
                 lfo.start();
@@ -261,42 +276,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 vco2.started = true;
                 
                 console.log('All oscillators started successfully');
+                
+                // Only set flag AFTER everything is initialized and working
+                audioStarted = true;
+                startButton.disabled = true;
+                startButton.textContent = 'Audio Running';
+                
+                // Connect UI controls only after audio is running
+                connectUI();
+                updateAllDisplays();
+                
+                console.log('Audio setup completed successfully');
+                
             } catch (err) {
                 console.error('Error starting oscillators:', err);
+                throw err;
             }
-            
-            // Remove test tone which causes popping
-            /*
-            // Add a simple test tone to verify audio output
-            console.log('Creating test tone...');
-            const testOsc = new Tone.Oscillator({
-                frequency: 440,
-                type: 'sine',
-                volume: -20
-            }).toDestination();
-            
-            testOsc.start();
-            console.log('Test tone started - you should hear a 440Hz sine wave');
-            
-            // Automatically stop test tone after 1 second
-            setTimeout(() => {
-                testOsc.stop();
-                testOsc.dispose();
-                console.log('Test tone stopped');
-            }, 1000);
-            */
-
-            // Set flag AFTER everything is initialized
-            audioStarted = true;
-            startButton.disabled = true;
-            startButton.textContent = 'Audio Running';
-
-            // Connect UI controls
-            connectUI();
-            updateAllDisplays();
-
-            // Setup MIDI
-            console.log('Audio setup completed successfully');
 
         } catch (error) {
             console.error('Error during audio setup:', error);
@@ -1383,6 +1378,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize MIDI at startup to populate the dropdown
     setupMIDI();
     
+    // Initialize bass guitar fretboard
+    initializeBassNotes();
+    
+    // Add click-anywhere to start audio
+    document.addEventListener('click', async () => {
+        if (!audioStarted) {
+            console.log('Starting audio from document click...');
+            try {
+                await ensureAudioContext();
+                await startAudio();
+                console.log('Audio started by user interaction');
+            } catch (error) {
+                console.error('Error starting audio from click:', error);
+            }
+        }
+    }, { once: false });
+    
     // ===== Bass Guitar Module =====
     
     // Define bass string starting notes in MIDI note numbers (E1, A1, D2, G2)
@@ -1513,11 +1525,28 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to play a bass note
     function playBassNote(stringIndex, fret) {
+        console.log(`Attempting to play bass note: string ${stringIndex}, fret ${fret}`);
+        
         // Make sure audio is started
         if (!audioStarted) {
+            console.log('Audio not started, starting audio from bass note...');
+            
+            // Add a visual indication that we're starting audio
+            const currentBassNoteElement = document.getElementById('current-bass-note');
+            if (currentBassNoteElement) {
+                currentBassNoteElement.textContent = 'Starting audio...';
+            }
+            
             startAudio().then(() => {
-                console.log('Audio started from bass note');
+                console.log('Audio successfully started from bass note');
                 actuallyPlayBassNote(stringIndex, fret);
+            }).catch(error => {
+                console.error('Failed to start audio for bass note:', error);
+                
+                // Update the display to show the error
+                if (currentBassNoteElement) {
+                    currentBassNoteElement.textContent = 'Audio failed to start';
+                }
             });
         } else {
             actuallyPlayBassNote(stringIndex, fret);
@@ -1525,9 +1554,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function actuallyPlayBassNote(stringIndex, fret) {
+        console.log(`Playing bass note: string ${stringIndex}, fret ${fret}`);
+        
+        // First check if audio components are initialized
+        if (!vco1 || !vco2 || !ampEnv || !filterEnv) {
+            console.error('Cannot play bass note - audio components not initialized');
+            
+            // Try to initialize audio again
+            startAudio().then(() => {
+                console.log('Audio reinitialized, trying to play bass note again');
+                setTimeout(() => playBassNote(stringIndex, fret), 100);
+            }).catch(error => {
+                console.error('Failed to reinitialize audio:', error);
+            });
+            
+            return;
+        }
+        
         const baseNote = bassStringNotes[stringIndex];
         const midiNote = baseNote + fret;
         const noteName = calculateNoteName(midiNote);
+        
+        console.log(`Generated MIDI note ${midiNote} (${noteName}) from string ${stringIndex} fret ${fret}`);
         
         // Find the note element using the data attributes
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
@@ -1537,13 +1585,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const notePosition = stringElement.querySelector(`.note-position[data-fret="${fret}"]`);
-        if (!notePosition) {
+        if (!notePosition && fret !== 0) {  // For open strings, we might not have a note position
             console.error(`Note position not found for string ${stringIndex}, fret ${fret}`);
             return;
         }
         
         // Add visual feedback
-        notePosition.classList.add('active');
+        if (notePosition) {
+            notePosition.classList.add('active');
+        }
         stringElement.classList.add('active');
         
         // Store the active note element so we can remove the active class later
@@ -1560,13 +1610,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Trigger the note using the synth's existing note handling
-        handleNoteOn(midiNote, 0.8);
-        
-        console.log(`Playing bass note: string ${stringIndex} (${calculateNoteName(baseNote)}), fret ${fret}, MIDI note ${midiNote} (${noteName})`);
+        try {
+            handleNoteOn(midiNote, 0.8);
+            console.log(`Successfully triggered note ${midiNote} (${noteName})`);
+        } catch (error) {
+            console.error(`Error playing bass note: ${error.message}`);
+        }
     }
     
     // Function to release a bass note
     function releaseBassNote(stringIndex, fret) {
+        console.log(`Releasing bass note: string ${stringIndex}, fret ${fret}`);
+        
+        // Check if audio is initialized
+        if (!audioStarted) {
+            console.log('Audio not started, cannot release bass note');
+            return;
+        }
+        
+        // Calculate the MIDI note
         const baseNote = bassStringNotes[stringIndex];
         const midiNote = baseNote + fret;
         
@@ -1575,7 +1637,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const elements = activeNoteElements.get(noteKey);
         
         if (elements) {
-            elements.notePosition.classList.remove('active');
+            // Remove active class from note position if it exists
+            if (elements.notePosition) {
+                elements.notePosition.classList.remove('active');
+            }
             
             // Only remove active class from string if no other notes are active on this string
             let hasActiveNotes = false;
@@ -1600,10 +1665,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Trigger note off
-        handleNoteOff(midiNote);
-        
-        console.log(`Released bass note: string ${stringIndex}, fret ${fret}, MIDI note ${midiNote} (${calculateNoteName(midiNote)})`);
+        // Trigger note off with error handling
+        try {
+            handleNoteOff(midiNote);
+            console.log(`Successfully released note ${midiNote} (${calculateNoteName(midiNote)})`);
+        } catch (error) {
+            console.error(`Error releasing bass note: ${error.message}`);
+        }
     }
     
     // Function to calculate note name from MIDI note number
