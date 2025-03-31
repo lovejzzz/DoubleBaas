@@ -1407,7 +1407,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Create note positions for each fret (0-12)
             for (let fret = 0; fret < numFrets; fret++) {
-                const noteValue = baseNote + fret;
+                // Special case for E string (index 0) first fret to display F instead of F#
+                let noteValue;
+                if (stringIndex === 0 && fret === 1) {
+                    noteValue = 29; // F note instead of F#
+                } else {
+                    noteValue = baseNote + fret;
+                }
                 const noteName = calculateNoteName(noteValue);
                 
                 const notePosition = document.createElement('div');
@@ -1469,7 +1475,14 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function actuallyPlayBassNote(stringIndex, fret) {
         const baseNote = bassStringNotes[stringIndex];
-        const midiNote = baseNote + fret;
+        // Special case for E string (index 0) first fret to play F instead of F#
+        let midiNote;
+        if (stringIndex === 0 && fret === 1) {
+            // F note (29) instead of F# (30)
+            midiNote = 29;
+        } else {
+            midiNote = baseNote + fret;
+        }
         const noteName = calculateNoteName(midiNote);
         
         // Find the note element using the data attributes
@@ -1493,7 +1506,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const noteKey = `${stringIndex}-${fret}`;
         activeNoteElements.set(noteKey, {
             notePosition,
-            stringElement
+            stringElement,
+            midiNote: midiNote // Store the actual MIDI note value for release
         });
         
         // Update current note display
@@ -1510,30 +1524,44 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to release a bass note
     function releaseBassNote(stringIndex, fret) {
-        const baseNote = bassStringNotes[stringIndex];
-        const midiNote = baseNote + fret;
-        
-        // Find and remove the active classes
         const noteKey = `${stringIndex}-${fret}`;
         const elements = activeNoteElements.get(noteKey);
         
-        if (elements) {
-            elements.notePosition.classList.remove('active');
-            
-            // Only remove active class from string if no other notes are active on this string
-            let hasActiveNotes = false;
-            activeNoteElements.forEach((value, key) => {
-                if (key.startsWith(`${stringIndex}-`) && key !== noteKey) {
-                    hasActiveNotes = true;
-                }
-            });
-            
-            if (!hasActiveNotes) {
-                elements.stringElement.classList.remove('active');
-            }
-            
-            activeNoteElements.delete(noteKey);
+        if (!elements) {
+            // Nothing to release
+            return;
         }
+        
+        // Use the stored MIDI note or calculate it
+        let midiNote;
+        if (elements.midiNote) {
+            midiNote = elements.midiNote;
+        } else {
+            // Special case for E string (index 0) first fret to play F instead of F#
+            if (stringIndex === 0 && fret === 1) {
+                midiNote = 29; // F note instead of F#
+            } else {
+                const baseNote = bassStringNotes[stringIndex];
+                midiNote = baseNote + fret;
+            }
+        }
+        
+        // Find and remove the active classes
+        elements.notePosition.classList.remove('active');
+        
+        // Only remove active class from string if no other notes are active on this string
+        let hasActiveNotes = false;
+        activeNoteElements.forEach((value, key) => {
+            if (key.startsWith(`${stringIndex}-`) && key !== noteKey) {
+                hasActiveNotes = true;
+            }
+        });
+        
+        if (!hasActiveNotes) {
+            elements.stringElement.classList.remove('active');
+        }
+        
+        activeNoteElements.delete(noteKey);
         
         // Update current note display if no notes are active
         if (activeNoteElements.size === 0) {

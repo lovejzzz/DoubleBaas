@@ -113,11 +113,11 @@
 }
 
 .bass-strings-container {
-    position: relative;
+    position: absolute;
     display: flex;
     flex-direction: column;
     width: calc(100% - 30px); /* Account for the nut width */
-    height: 140px;
+    height: 100%;
     justify-content: space-between;
     padding: 10px 0;
     z-index: 3; /* Ensure strings are above frets */
