@@ -1448,11 +1448,68 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // Initialize open strings
+        setupOpenStrings();
+        
         console.log('Bass fretboard initialized with notes');
     }
     
-    // Call the initialization function
-    initializeBassNotes();
+    // Set up event listeners for open strings
+    function setupOpenStrings() {
+        const openStrings = document.querySelectorAll('.open-string');
+        
+        openStrings.forEach((stringEl) => {
+            const stringIndex = parseInt(stringEl.dataset.string, 10);
+            
+            // Add event listeners for mouse
+            stringEl.addEventListener('mousedown', () => {
+                playOpenString(stringIndex);
+            });
+            
+            stringEl.addEventListener('mouseup', () => {
+                releaseOpenString(stringIndex);
+            });
+            
+            stringEl.addEventListener('mouseleave', () => {
+                releaseOpenString(stringIndex);
+            });
+            
+            // Touch events for mobile
+            stringEl.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                playOpenString(stringIndex);
+            });
+            
+            stringEl.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                releaseOpenString(stringIndex);
+            });
+        });
+        
+        console.log('Open strings initialized');
+    }
+    
+    // Function to play an open string (fret 0)
+    function playOpenString(stringIndex) {
+        playBassNote(stringIndex, 0);
+        
+        // Also highlight the open string element
+        const openStringEl = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        if (openStringEl) {
+            openStringEl.classList.add('active');
+        }
+    }
+    
+    // Function to release an open string
+    function releaseOpenString(stringIndex) {
+        releaseBassNote(stringIndex, 0);
+        
+        // Remove highlight from the open string element
+        const openStringEl = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        if (openStringEl) {
+            openStringEl.classList.remove('active');
+        }
+    }
     
     // Function to play a bass note
     function playBassNote(stringIndex, fret) {

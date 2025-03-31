@@ -49,6 +49,7 @@
     height: 100%;
     z-index: 1;
     pointer-events: none;
+    padding-left: 30px; /* Make room for open strings section */
 }
 
 .fret-marker {
@@ -92,6 +93,7 @@
     display: flex;
     z-index: 2;
     pointer-events: none;
+    padding-left: 30px; /* Make room for open strings section */
 }
 
 .fret {
@@ -118,6 +120,7 @@
     justify-content: space-between;
     padding: 10px 0;
     z-index: 3; /* Ensure strings are above frets */
+    padding-left: 30px; /* Make room for open strings section */
 }
 
 .bass-string {
@@ -204,4 +207,41 @@
 #current-bass-note {
     font-weight: bold;
     color: #4f8eff;
+}
+
+/* Open strings section */
+.open-strings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 100%;
+    background-color: #422a14; /* Darker than fretboard */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 0;
+    z-index: 4;
+    border-right: 4px solid #FFFFF0; /* Ivory color for nut */
+}
+
+.open-string {
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFF0; /* Ivory text */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.1s;
+    font-size: 14px;
+}
+
+.open-string:hover {
+    background-color: rgba(79, 142, 255, 0.3);
+}
+
+.open-string.active {
+    background-color: rgba(79, 142, 255, 0.7);
+    color: white;
 } 
