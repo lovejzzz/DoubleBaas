@@ -15,7 +15,10 @@
             <h2>Global Controls</h2>
             <button id="start-audio">Start Audio Context</button>
             <div class="midi-controls">
-                <label for="midi-input">MIDI Input:</label>
+                <div class="midi-header">
+                    <label for="midi-input">MIDI Input:</label>
+                    <div id="midi-activity-light" class="midi-light"></div>
+                </div>
                 <select id="midi-input" disabled>
                     <option>-- Select MIDI Device --</option>
                 </select>

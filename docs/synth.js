@@ -1,8 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Envelope Visualization ---
-    // We'll initialize the envelope visualizations after the audio context is started
-    // to ensure all DOM elements are fully loaded and accessible
-
     // --- Global References ---
     let audioStarted = false;
     let vco1, vco2, vco1Gain, vco2Gain;
@@ -12,17 +8,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let masterVolume;
     let currentNote = null; // Simple monophonic tracking
     const pitchBendRange = 2; // Semitones for pitch bend +/-
+    let midiActivityLight = null; // Reference to MIDI activity indicator
+    let midiLightTimeout = null; // For handling the light timeout
+    const activeNotes = new Set();
 
     // LFO->Parameter Gain Nodes (for controlling modulation depth)
     let lfoFilterModGain, lfoVco1PwmGain, lfoVco2PwmGain, lfoVibratoGain;
     let filterEnvMod; // Declare filterEnvMod here
+
+    // MIDI State
+    let midiAccess = null; // Store MIDI access object
+    let currentMidiInputId = null; // Store the ID of the selected input
 
     // === DOM Element References ===
     const startButton = document.getElementById('start-audio');
     const midiInputSelector = document.getElementById('midi-input');
     const masterVolumeSlider = document.getElementById('master-volume');
     const glideSlider = document.getElementById('glide');
+    midiActivityLight = document.getElementById('midi-activity-light');
 
+    // ... (rest of your DOM element references are fine) ...
     // VCO1
     const vco1WaveSelect = document.getElementById('vco1-wave');
     const vco1DetuneSlider = document.getElementById('vco1-detune');
@@ -57,13 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Value display elements (map by ID for easier lookup)
     const displays = {};
-    
+
     // Function to find and store all value displays
     function initializeDisplays() {
-        // Get all control groups
         const controlGroups = document.querySelectorAll('.control-group');
-        
-        // For each control group, find the input and its associated value display
         controlGroups.forEach(group => {
             const input = group.querySelector('input, select');
             if (input && input.id) {
@@ -73,150 +75,236 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
         console.log('Initialized display elements:', Object.keys(displays));
     }
 
-    // State object for MIDI
-    const midiState = {
-        currentInput: null // Reference to the currently selected MIDI input device
-    };
+    // Initialize Tone.js context explicitly
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    Tone.setContext(audioContext);
+
+    // Function to ensure audio context is running
+    async function ensureAudioContext() {
+        console.log('Ensuring audio context is running...');
+        if (audioContext.state !== 'running') {
+            console.log('Attempting to resume audio context...');
+            try {
+                await audioContext.resume();
+                await Tone.start();
+                console.log('Audio context resumed successfully:', audioContext.state);
+            } catch (error) {
+                console.error('Failed to resume audio context:', error);
+                throw error;
+            }
+        } else {
+            console.log('Audio context already running');
+        }
+    }
 
     // --- Main Audio Setup Function ---
     async function setupAudio() {
-        if (audioStarted) return;
-        await Tone.start();
-        console.log('Audio Context Started');
-        audioStarted = true;
-        startButton.disabled = true;
-        
-        // Initialize the display elements
-        initializeDisplays();
-        
-        // Initialize envelope visualizations after audio context is started
-        const filterEnvCanvas = document.getElementById('filter-env-canvas');
-        const ampEnvCanvas = document.getElementById('amp-env-canvas');
-        
-        console.log('Filter canvas:', filterEnvCanvas);
-        console.log('Amp canvas:', ampEnvCanvas);
-        
-        if (filterEnvCanvas && ampEnvCanvas) {
-            console.log("Initializing envelope visualizations");
-            
-            // Initialize with a slight delay to ensure canvases are ready
-            setTimeout(() => {
-                console.log("Drawing filter envelope");
-                initEnvelopeVisualization('filter', filterEnvCanvas);
-                
-                console.log("Drawing amp envelope");
-                initEnvelopeVisualization('amp', ampEnvCanvas);
-                
-                // Force a redraw of both envelopes
-                console.log("Forcing redraw of envelopes");
-            }, 100);
-        } else {
-            console.error("Could not find envelope canvases");
+        if (audioStarted) {
+            console.log('Audio already started');
+            return;
         }
-        startButton.textContent = 'Audio Running';
 
-        // === Create Audio Nodes ===
-        masterVolume = new Tone.Gain(parseFloat(masterVolumeSlider.value)).toDestination();
+        try {
+            await ensureAudioContext();
+            // Rest of setupAudio function remains the same...
 
-        // Envelopes (using default values from HTML initially)
-        filterEnv = new Tone.Envelope({
-            attack: parseFloat(filterAttackSlider.value), decay: parseFloat(filterDecaySlider.value),
-            sustain: parseFloat(filterSustainSlider.value), release: parseFloat(filterReleaseSlider.value),
-            attackCurve: 'exponential', releaseCurve: 'exponential'
-        });
-        ampEnv = new Tone.AmplitudeEnvelope({
-            attack: parseFloat(ampAttackSlider.value), decay: parseFloat(ampDecaySlider.value),
-            sustain: parseFloat(ampSustainSlider.value), release: parseFloat(ampReleaseSlider.value),
-            attackCurve: 'exponential', releaseCurve: 'exponential'
-        }).connect(masterVolume);
+            // Initialize displays map
+            initializeDisplays();
 
+            // Initialize envelope visualizations
+            const filterEnvCanvas = document.getElementById('filter-env-canvas');
+            const ampEnvCanvas = document.getElementById('amp-env-canvas');
+            if (filterEnvCanvas && ampEnvCanvas) {
+                console.log("Initializing envelope visualizations...");
+                initEnvelopeVisualization('filter', filterEnvCanvas);
+                initEnvelopeVisualization('amp', ampEnvCanvas);
+            } else {
+                console.warn("Could not find one or both envelope canvases.");
+            }
 
-        // Filter Section (Sweepable LP/HP via Crossfade)
-        const initialCutoffFreq = midiToFreq(parseFloat(filterCutoffSlider.value));
-        const initialQ = parseFloat(filterQSlider.value);
-        filterLp = new Tone.Filter({ frequency: initialCutoffFreq, type: 'lowpass', rolloff: -12, Q: initialQ });
-        filterHp = new Tone.Filter({ frequency: initialCutoffFreq, type: 'highpass', rolloff: -12, Q: initialQ });
-        filterSweepXFade = new Tone.CrossFade(parseFloat(filterSweepSlider.value)).connect(ampEnv); // Connect to Amp Env INSTEAD of master vol
-        filterLp.connect(filterSweepXFade.a);
-        filterHp.connect(filterSweepXFade.b);
+            // === Create Audio Nodes ===
+            console.log('Creating audio nodes...');
+            
+            // Create master volume
+            masterVolume = new Tone.Gain(parseFloat(masterVolumeSlider.value)).toDestination();
+            console.log('Master volume created and connected to destination');
 
-        // Filter Env Amount (Bipolar) - Scales envelope output before adding to filter freq
-        const filterEnvModScale = 6000; // Max Hz sweep range for the filter envelope (adjust as needed)
-        filterEnvMod = new Tone.Scale(0, filterEnvModScale); // Initialize the outer scope variable
-        filterEnv.connect(filterEnvMod);
-        filterEnvMod.connect(filterLp.detune); // Modulate filter detune (in cents)
-        filterEnvMod.connect(filterHp.detune);
+            // Create envelopes with better release settings
+            filterEnv = new Tone.Envelope({
+                attack: parseFloat(filterAttackSlider.value),
+                decay: parseFloat(filterDecaySlider.value),
+                sustain: parseFloat(filterSustainSlider.value),
+                release: parseFloat(filterReleaseSlider.value),
+                attackCurve: 'exponential',
+                releaseCurve: 'exponential'
+            });
+            console.log('Filter envelope created');
 
-        // Oscillators
-        vco1 = new Tone.Oscillator({ // Use standard Oscillator for now
-             frequency: 440, // Default frequency
-             detune: parseFloat(vco1DetuneSlider.value),
-             type: vco1WaveSelect.value // Set initial type directly
-         });
+            ampEnv = new Tone.AmplitudeEnvelope({
+                attack: parseFloat(ampAttackSlider.value),
+                decay: parseFloat(ampDecaySlider.value),
+                sustain: parseFloat(ampSustainSlider.value),
+                release: parseFloat(ampReleaseSlider.value),
+                attackCurve: 'exponential',
+                releaseCurve: 'exponential'
+            }).connect(masterVolume);
+            console.log('Amp envelope created and connected to master volume');
 
-        vco2 = new Tone.Oscillator({
-             frequency: 440,
-             detune: parseFloat(vco2DetuneSlider.value),
-             type: vco2WaveSelect.value
-         });
+            // Create and connect filter chain
+            const initialCutoffFreq = midiToFreq(parseFloat(filterCutoffSlider.value));
+            const initialQ = parseFloat(filterQSlider.value);
+            
+            filterLp = new Tone.Filter({
+                frequency: initialCutoffFreq,
+                type: 'lowpass',
+                rolloff: -12,
+                Q: initialQ
+            });
+            
+            filterHp = new Tone.Filter({
+                frequency: initialCutoffFreq,
+                type: 'highpass',
+                rolloff: -12,
+                Q: initialQ
+            });
+            
+            filterSweepXFade = new Tone.CrossFade(parseFloat(filterSweepSlider.value));
+            
+            // Connect filters to crossfade, then to amp envelope
+            filterLp.connect(filterSweepXFade.a);
+            filterHp.connect(filterSweepXFade.b);
+            filterSweepXFade.connect(ampEnv);
 
-        // Oscillator Gains (Mixer) - connect VCOs to Gains, Gains to *both* filters
-        vco1Gain = new Tone.Gain(parseFloat(mixVco1Slider.value)); 
-        vco2Gain = new Tone.Gain(parseFloat(mixVco2Slider.value)); 
-        // Correct connections: Gain output goes to BOTH filters independently
-        vco1Gain.connect(filterLp);
-        vco1Gain.connect(filterHp);
-        vco2Gain.connect(filterLp);
-        vco2Gain.connect(filterHp);
+            // Set up filter envelope modulation
+            const filterEnvModScale = 6000;
+            filterEnvMod = new Tone.Scale(0, filterEnvModScale * parseFloat(filterEnvAmtSlider.value));
+            filterEnv.connect(filterEnvMod);
+            filterEnvMod.connect(filterLp.detune);
+            filterEnvMod.connect(filterHp.detune);
+            
+            console.log('Filter chain created and connected');
 
-        vco1.connect(vco1Gain);
-        vco2.connect(vco2Gain);
+            // Create oscillators with explicit phase
+            vco1 = new Tone.Oscillator({
+                frequency: 440,
+                detune: parseFloat(vco1DetuneSlider.value),
+                type: vco1WaveSelect.value === 'pulse' ? 'square' : vco1WaveSelect.value,
+                phase: 0
+            });
 
-        // LFO
-        lfo = new Tone.LFO({
-            frequency: parseFloat(lfoRateSlider.value),
-            type: lfoWaveSelect.value,
-            min: -1, // Bipolar for vibrato/filter mod
-            max: 1
-        }).start(); // Start LFO immediately
+            vco2 = new Tone.Oscillator({
+                frequency: 440,
+                detune: parseFloat(vco2DetuneSlider.value),
+                type: vco2WaveSelect.value === 'pulse' ? 'square' : vco2WaveSelect.value,
+                phase: 0
+            });
 
-        // LFO Routing Gain Nodes (initialize with UI values)
-        const initialFilterLfoModHz = 3000; // Max LFO sweep in Hz
-        lfoFilterModGain = new Tone.Scale(0, initialFilterLfoModHz); // Will be scaled by slider later
-        lfo.connect(lfoFilterModGain);
-        lfoFilterModGain.connect(filterLp.detune); // Modulate filter detune/offset
-        lfoFilterModGain.connect(filterHp.detune);
+            // Create oscillator gains with explicit values
+            vco1Gain = new Tone.Gain(parseFloat(mixVco1Slider.value));
+            vco2Gain = new Tone.Gain(parseFloat(mixVco2Slider.value));
 
-        // LFO -> PWM Depth (Scale -1 to 1 LFO output to Pulse Width range 0 to ~0.9)
-        // Note: PulseOscillator width is 0-1. LFO is -1 to 1. We need bipolar scaling.
-        lfoVco1PwmGain = new Tone.Scale(0, 0.45); // Max width deviation
-        lfo.connect(lfoVco1PwmGain);
-        //lfoVco1PwmGain.connect(vco1.width); // PWM TEMPORARILY DISABLED
+            // Connect oscillators through the signal chain with explicit logging
+            console.log('Connecting oscillators to gains...');
+            vco1.connect(vco1Gain);
+            vco2.connect(vco2Gain);
 
-        lfoVco2PwmGain = new Tone.Scale(0, 0.45); // Max width deviation
-        lfo.connect(lfoVco2PwmGain);
-        //lfoVco2PwmGain.connect(vco2.width); // PWM TEMPORARILY DISABLED
+            console.log('Connecting gains to filters...');
+            vco1Gain.connect(filterLp);
+            vco2Gain.connect(filterLp);
+            vco1Gain.connect(filterHp);
+            vco2Gain.connect(filterHp);
+            console.log('Oscillators created and connected to filter chain');
 
-        // LFO -> Vibrato (Scale LFO +/-1 to +/- cents)
-        lfoVibratoGain = new Tone.Scale(0, parseFloat(lfoVibratoDepthSlider.value)); // +/- Cents
-        lfo.connect(lfoVibratoGain);
-        lfoVibratoGain.connect(vco1.detune); // Add LFO modulation to base detune
-        lfoVibratoGain.connect(vco2.detune);
+            // Create and setup LFO
+            lfo = new Tone.LFO({
+                frequency: parseFloat(lfoRateSlider.value),
+                type: lfoWaveSelect.value,
+                min: -1,
+                max: 1
+            });
 
-        // Start Oscillators
-        vco1.start();
-        vco2.start();
+            // Setup LFO modulation routing
+            lfoFilterModGain = new Tone.Scale(
+                -3000 * parseFloat(filterLfoAmtSlider.value),
+                3000 * parseFloat(filterLfoAmtSlider.value)
+            );
+            
+            lfoVibratoGain = new Tone.Scale(
+                -parseFloat(lfoVibratoDepthSlider.value),
+                parseFloat(lfoVibratoDepthSlider.value)
+            );
 
-        // === Connect UI Controls ===
-        connectUI();
-        updateAllDisplays(); // Set initial display values
+            // Connect LFO modulation
+            lfo.connect(lfoFilterModGain);
+            lfo.connect(lfoVibratoGain);
+            lfoFilterModGain.connect(filterLp.detune);
+            lfoFilterModGain.connect(filterHp.detune);
+            lfoVibratoGain.connect(vco1.detune);
+            lfoVibratoGain.connect(vco2.detune);
+            console.log('LFO and modulation routing created and connected');
 
-        // === Setup MIDI ===
-        setupMIDI();
+            // Start all components with explicit checks
+            console.log('Starting audio components...');
+            try {
+                console.log('Starting LFO...');
+                lfo.start();
+                
+                console.log('Starting VCO1...');
+                vco1.start();
+                vco1.started = true;
+                
+                console.log('Starting VCO2...');
+                vco2.start();
+                vco2.started = true;
+                
+                console.log('All oscillators started successfully');
+            } catch (err) {
+                console.error('Error starting oscillators:', err);
+            }
+            
+            // Remove test tone which causes popping
+            /*
+            // Add a simple test tone to verify audio output
+            console.log('Creating test tone...');
+            const testOsc = new Tone.Oscillator({
+                frequency: 440,
+                type: 'sine',
+                volume: -20
+            }).toDestination();
+            
+            testOsc.start();
+            console.log('Test tone started - you should hear a 440Hz sine wave');
+            
+            // Automatically stop test tone after 1 second
+            setTimeout(() => {
+                testOsc.stop();
+                testOsc.dispose();
+                console.log('Test tone stopped');
+            }, 1000);
+            */
+
+            // Set flag AFTER everything is initialized
+            audioStarted = true;
+            startButton.disabled = true;
+            startButton.textContent = 'Audio Running';
+
+            // Connect UI controls
+            connectUI();
+            updateAllDisplays();
+
+            // Setup MIDI
+            console.log('Audio setup completed successfully');
+
+        } catch (error) {
+            console.error('Error during audio setup:', error);
+            audioStarted = false;
+            startButton.disabled = false;
+            startButton.textContent = 'Start Audio Context';
+            throw error; // Re-throw to handle in calling function
+        }
     }
 
     // --- UI Control Logic ---
@@ -335,12 +423,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Update Display Values ---
-     function midiToFreq(midiVal) {
-        // Simple exponential mapping from slider range (1-127) to frequency (e.g., 20Hz - 18kHz)
+    function midiToFreq(midiVal) {
+        // Use Tone.js built-in conversion for accuracy
+        return Tone.Frequency(midiVal, "midi").toFrequency();
+        
+        // Legacy implementation as fallback
+        /*
         const minLog = Math.log(20);
         const maxLog = Math.log(18000);
         const scale = (maxLog - minLog) / (127 - 1);
         return Math.exp(minLog + scale * (midiVal - 1));
+        */
     }
 
     function updateDisplay(key, value, element) {
@@ -376,199 +469,386 @@ document.addEventListener('DOMContentLoaded', () => {
                  updateDisplay(id, inputElement.value, inputElement);
              }
          });
+         
+         // Redraw envelope visualizations
+         const filterEnvCanvas = document.getElementById('filter-env-canvas');
+         const ampEnvCanvas = document.getElementById('amp-env-canvas');
+         if (filterEnvCanvas && ampEnvCanvas) {
+             initEnvelopeVisualization('filter', filterEnvCanvas);
+             initEnvelopeVisualization('amp', ampEnvCanvas);
+         }
      }
 
 
     // --- MIDI Handling ---
-    function setupMIDI() {
-        if (navigator.requestMIDIAccess) {
-            navigator.requestMIDIAccess({ sysex: false }) // Sysex not needed
-                .then(onMIDISuccess, onMIDIFailure);
-        } else {
+    async function setupMIDI() {
+        console.log('Setting up MIDI...');
+        if (!navigator.requestMIDIAccess) {
             console.warn("WebMIDI is not supported in this browser.");
             midiInputSelector.innerHTML = '<option>Not Supported</option>';
             midiInputSelector.disabled = true;
+            return;
+        }
+        
+        try {
+            // Request MIDI access with minimal permissions, explicitly setting sysex to false
+            const options = { sysex: false };
+            midiAccess = await navigator.requestMIDIAccess(options);
+            console.log('MIDI access granted!');
+            
+            // Setup the input selector
+            populateMIDIInputs();
+            
+            // Add change event listener to the dropdown
+            midiInputSelector.addEventListener('change', handleMIDIInputChange);
+            
+            // Setup statechange handler for device connect/disconnect
+            // Use a simpler approach to avoid permission warnings
+            const checkMIDIDevices = () => {
+                populateMIDIInputs();
+                if (!currentMidiInputId && midiInputSelector.options.length > 1) {
+                    // Auto select first device if none selected
+                    const firstDeviceId = midiInputSelector.options[1].value;
+                    midiInputSelector.value = firstDeviceId;
+                    handleMIDIInputChange({ target: { value: firstDeviceId } });
+                }
+            };
+            
+            // Use polling instead of statechange which might require additional permissions
+            const checkInterval = setInterval(checkMIDIDevices, 2000);
+            
+            // Auto-select the first device if available
+            const inputs = Array.from(midiAccess.inputs.values());
+            if (inputs.length > 0) {
+                console.log('Auto-selecting first MIDI device:', inputs[0].name);
+                midiInputSelector.value = inputs[0].id;
+                handleMIDIInputChange({ target: { value: inputs[0].id } });
+                activateMidiLight();
+            } else {
+                console.log('No MIDI inputs available');
+            }
+        } catch (error) {
+            console.error('Failed to get MIDI access:', error);
+            midiInputSelector.innerHTML = '<option>MIDI Access Failed</option>';
+            midiInputSelector.disabled = true;
         }
     }
-
-    function onMIDISuccess(midiAccess) {
-        console.log("MIDI ready!");
-        let inputs = midiAccess.inputs;
-        if (inputs.size === 0) {
-            midiInputSelector.innerHTML = '<option>No MIDI devices found</option>';
+    
+    // Function to populate MIDI input dropdown
+    function populateMIDIInputs() {
+        if (!midiAccess) return;
+        
+        // Get all inputs as an array for easier handling
+        const inputs = Array.from(midiAccess.inputs.values());
+        console.log(`Found ${inputs.length} MIDI inputs:`, inputs.map(i => i.name));
+        
+        // Update the dropdown
+        if (inputs.length === 0) {
+            midiInputSelector.innerHTML = '<option value="">No MIDI devices found</option>';
             midiInputSelector.disabled = true;
             return;
         }
-
-        midiInputSelector.innerHTML = '<option value="">-- Select MIDI Device --</option>'; // Placeholder
+        
+        // Store current selection to restore it if possible
+        const currentSelection = midiInputSelector.value;
+        
+        // Populate the dropdown with available devices
+        midiInputSelector.innerHTML = '<option value="">-- Select MIDI Device --</option>';
         inputs.forEach(input => {
             const option = document.createElement('option');
             option.value = input.id;
             option.text = input.name;
+            // Select if this is the current device
+            if (input.id === currentMidiInputId) {
+                option.selected = true;
+            }
             midiInputSelector.appendChild(option);
-            console.log(`Found MIDI input: ID=${input.id}, Name=${input.name}`);
         });
-         midiInputSelector.disabled = false; // Enable dropdown
-
-        autoSelectMIDIInput(midiAccess); // Attempt to auto-select first input
-
-        midiAccess.onstatechange = (event) => {
-             console.log(`MIDI state change: ${event.port.name} state: ${event.port.state}`);
-             // Rescan and populate MIDI inputs on change
-            // Clear current selection and listeners before repopulating
-            midiInputSelector.value = ""; // Reset dropdown
-            onMIDISuccess(midiAccess); // Repopulate
-        };
+        midiInputSelector.disabled = false;
+        
+        // Try to restore previous selection if the device is still available
+        if (currentSelection && Array.from(midiAccess.inputs.keys()).includes(currentSelection)) {
+            midiInputSelector.value = currentSelection;
+        }
+        
+        // Log the current device ID and dropdown value
+        console.log('Current MIDI input ID:', currentMidiInputId);
+        console.log('MIDI dropdown value:', midiInputSelector.value);
+    }
+    
+    // Handle MIDI input selection change
+    function handleMIDIInputChange(event) {
+        const selectedInputId = event.target.value;
+        console.log('MIDI input selection changed to:', selectedInputId);
+        
+        // Remove listener from current input if any
+        detachCurrentMIDIListener();
+        
+        // Set up new input
+        if (selectedInputId && midiAccess) {
+            const selectedInput = midiAccess.inputs.get(selectedInputId);
+            if (selectedInput) {
+                console.log(`Attaching MIDI listener to: ${selectedInput.name}`);
+                
+                // Use simple function to just handle basic MIDI note messages
+                selectedInput.onmidimessage = function(event) {
+                    // Only log the message type, not the full data to avoid permission concerns
+                    const [status] = event.data;
+                    const command = status >> 4;
+                    const channel = status & 0xf;
+                    
+                    console.log(`MIDI message received: command=${command}, channel=${channel}`);
+                    
+                    // Process the message normally
+                    handleMIDIMessage(event);
+                };
+                
+                currentMidiInputId = selectedInputId;
+                activateMidiLight(); // Flash the light to show connection
+                
+                console.log(`MIDI keyboard "${selectedInput.name}" connected`);
+            } else {
+                console.warn(`Selected MIDI input ${selectedInputId} not found`);
+            }
+        } else {
+            console.log('No MIDI input selected');
+        }
+    }
+    
+    // Remove message handler from current input
+    function detachCurrentMIDIListener() {
+        if (currentMidiInputId && midiAccess) {
+            const currentInput = midiAccess.inputs.get(currentMidiInputId);
+            if (currentInput) {
+                console.log(`Detaching MIDI listener from: ${currentInput.name}`);
+                currentInput.onmidimessage = null;
+            }
+        }
+        currentMidiInputId = null;
     }
 
-
-    function onMIDIFailure(msg) {
-        console.error(`Failed to get MIDI access - ${msg}`);
-         midiInputSelector.innerHTML = '<option>MIDI Access Failed</option>';
-         midiInputSelector.disabled = true;
+    // Function to activate the MIDI activity light
+    function activateMidiLight() {
+        // Get a fresh reference to the light element
+        const light = document.getElementById('midi-activity-light');
+        if (!light) {
+            console.warn('MIDI activity light element not found');
+            return;
+        }
+        
+        // Remove any existing timeout
+        if (midiLightTimeout) {
+            clearTimeout(midiLightTimeout);
+            midiLightTimeout = null;
+        }
+        
+        // Add active class and ensure it's visible
+        light.style.display = 'block';
+        light.classList.add('active');
+        
+        // Set new timeout
+        midiLightTimeout = setTimeout(() => {
+            light.classList.remove('active');
+        }, 150);
     }
 
-    function handleMIDIMessage(event) {
-        if (!audioStarted) return; // Don't process MIDI if audio not started
-
-        console.log("handleMIDIMessage received data:", event.data);
-
-        const command = event.data[0] >> 4; // Command is the upper nibble (e.g., 9=NoteOn, 8=NoteOff, 11=CC, 14=PitchBend)
-        const channel = event.data[0] & 0xf; // Channel is the lower nibble (0-15)
-        const data1 = event.data[1]; // Note number or CC number
-        const data2 = event.data.length > 2 ? event.data[2] : 0; // Velocity or CC value
-
-        const time = Tone.now(); // Use Tone.now() for precise timing
-
-        switch (command) {
-            case 9: // Note On
-                if (data2 > 0) { // Velocity > 0 means Note On
-                    console.log("Note On detected in handleMIDIMessage");
-                    noteOn(data1, data2, time);
-                } else {
-                    // Some controllers send Note On with velocity 0 for Note Off
-                    noteOff(data1, time);
+    async function handleMIDIMessage(event) {
+        try {
+            // Ensure audio context is running
+            if (audioContext.state !== 'running' || !audioStarted) {
+                console.log('Audio not ready, attempting to initialize...');
+                await ensureAudioContext();
+                if (!audioStarted) {
+                    await startAudio();
                 }
-                break;
-            case 8: // Note Off
-                noteOff(data1, time);
-                break;
-            case 11: // Control Change (CC)
-                handleCC(data1, data2); // data1=CC number, data2=CC value
-                break;
-            case 14: // Pitch Bend
-                // Combine MSB and LSB for pitch bend value
-                const bendValue = ((data2 << 7) | data1) - 8192; // Range -8192 to +8191
-                handlePitchBend(bendValue, time);
-                break;
+            }
+
+            // Extract MIDI message components
+            const [status, data1, data2] = event.data;
+            const command = status >> 4;
+            const channel = status & 0xf;
+
+            // Process MIDI message
+            if (audioStarted && audioContext.state === 'running') {
+                // Flash MIDI activity light first
+                activateMidiLight();
+                
+                // Handle different MIDI message types
+                if (command === 9 && data2 > 0) {
+                    // Note On
+                    handleNoteOn(data1, data2 / 127);
+                } else if (command === 8 || (command === 9 && data2 === 0)) {
+                    // Note Off
+                    handleNoteOff(data1);
+                } else if (command === 11) {
+                    // Control Change
+                    handleCC(data1, data2);
+                }
+            } else {
+                console.warn('Audio system not ready, MIDI message ignored');
+            }
+        } catch (error) {
+            console.error('Error processing MIDI message:', error);
         }
     }
 
-    function noteOn(midiNote, velocity, time) {
-        console.log(`Note On: ${midiNote}, Vel: ${velocity}`);
-        currentNote = midiNote;
-        const freq = Tone.Frequency(midiNote, "midi").toFrequency();
-        const velNorm = velocity / 127;
+    function handleNoteOn(note, velocity) {
+        if (!vco1 || !vco2 || !ampEnv || !filterEnv) {
+            console.error('Cannot play note - audio components not initialized');
+            return;
+        }
 
-        // Set oscillator frequencies (with portamento respecting glide time)
-        if (vco1) vco1.frequency.rampTo(freq, parseFloat(glideSlider.value));
-        if (vco2) vco2.frequency.rampTo(freq, parseFloat(glideSlider.value));
-
-        // Trigger envelopes
-        // Scale amp envelope output by velocity (adjust curve to taste)
-        const ampModVelocity = Math.pow(velNorm, 1.5) * 0.8 + 0.2; // Make velocity more expressive
-        if(ampEnv) ampEnv.triggerAttack(time, ampModVelocity);
-        if(filterEnv) filterEnv.triggerAttack(time); // Filter env usually not velocity sensitive on SEM?
-    }
-
-    function noteOff(midiNote, time) {
-        // Only trigger release if this is the currently playing note (simple monophony)
-        if (midiNote === currentNote) {
-            console.log(`Note Off: ${midiNote}`);
-            if(ampEnv) ampEnv.triggerRelease(time);
-            if(filterEnv) filterEnv.triggerRelease(time);
-            currentNote = null; // Ready for a new note
-        } else {
-            console.log(`Note Off received for ${midiNote}, but current note is ${currentNote}. Ignoring.`);
+        try {
+            // Convert MIDI note number to frequency (ensuring we use the right function)
+            const freq = Tone.Frequency(note, "midi").toFrequency();
+            console.log(`Playing note ${note} at frequency ${freq}Hz with velocity ${velocity}`);
+            
+            // Store current note for monophonic handling
+            currentNote = note;
+            
+            // Get glide time from slider
+            const glideTime = parseFloat(glideSlider.value);
+            
+            // Update oscillator frequencies with glide
+            console.log(`Setting oscillator frequencies to ${freq}Hz with glide time ${glideTime}s`);
+            vco1.frequency.rampTo(freq, glideTime);
+            vco2.frequency.rampTo(freq, glideTime);
+            
+            // Trigger envelopes - use properly scaled velocity
+            console.log(`Triggering envelopes with velocity ${velocity}`);
+            
+            // Use immediate triggering with exact time
+            const now = Tone.now();
+            
+            // Make sure attack curve is exponential for smoother start
+            ampEnv.attackCurve = 'exponential';
+            filterEnv.attackCurve = 'exponential';
+            
+            filterEnv.triggerAttack(now);
+            ampEnv.triggerAttack(now, velocity);
+            
+            // Update active notes
+            activeNotes.add(note);
+            console.log(`Note ${note} is now active. Active notes:`, Array.from(activeNotes));
+            
+            // Remove test tone which was causing popping sounds
+        } catch (error) {
+            console.error('Error in handleNoteOn:', error);
         }
     }
 
-    function handlePitchBend(bendValue, time) {
+    function handleNoteOff(note) {
+        if (!ampEnv || !filterEnv) {
+            console.error('Cannot release note - envelopes not initialized');
+            return;
+        }
+
+        try {
+            console.log(`Releasing note ${note}`);
+            
+            // Remove note from active set
+            activeNotes.delete(note);
+            
+            // Only release envelopes if this was the last/current note
+            if (activeNotes.size === 0 || note === currentNote) {
+                console.log('Last/current note released, triggering envelope release');
+                
+                // Get the current time
+                const now = Tone.now();
+                
+                // Make sure curves are exponential for smoother release
+                ampEnv.releaseCurve = 'exponential';
+                filterEnv.releaseCurve = 'exponential';
+                
+                // Use exact time values instead of string offsets
+                // This provides more consistent timing and smoother transitions
+                filterEnv.triggerRelease(now);
+                ampEnv.triggerRelease(now);
+                
+                currentNote = null;
+            } else {
+                console.log('Other notes still active, not releasing envelopes');
+            }
+        } catch (error) {
+            console.error('Error in handleNoteOff:', error);
+        }
+    }
+
+    // Add helper function to update displays after playing notes
+    function updateDisplays() {
+        // Update any visual elements that should reflect the current state
+        // For now, just log the state
+        console.log('Updating displays. Current state:', {
+            activeNotes: Array.from(activeNotes),
+            currentNote
+        });
+    }
+
+    function handlePitchBend(bendValue) {
         if (!vco1 || !vco2) return;
-        // Map bend value (-8192 to 8191) to pitch shift in cents
-        // pitchBendRange is in semitones (+/-)
-        const cents = (bendValue / 8191) * pitchBendRange * 100;
-
-        // Apply the bend relative to the current note's frequency
-        // This requires calculating the target frequency based on the current note and bend
-        if (currentNote !== null) {
-            const baseFreq = Tone.Frequency(currentNote, "midi").toFrequency();
-            const bentFreq = baseFreq * Math.pow(2, cents / 1200);
-            // Ramp to the bent frequency smoothly (use a small ramp time)
-            vco1.frequency.rampTo(bentFreq, 0.05);
-            vco2.frequency.rampTo(bentFreq, 0.05);
-        } else {
-            // If no note is playing, maybe just update the base detune? Or ignore?
-            // For now, let's ignore pitch bend if no note is active.
-        }
+        
+        // Calculate bend amount in cents (-/+ pitchBendRange semitones)
+        // pitchBendRange is defined at top of file (default: 2 semitones)
+        const bendAmount = (bendValue / 8191) * pitchBendRange * 100;
+        
+        // Get base detune values from sliders
+        const vco1BaseDetune = parseFloat(vco1DetuneSlider.value);
+        const vco2BaseDetune = parseFloat(vco2DetuneSlider.value);
+        
+        // Calculate target detune by adding bend to base detune
+        const vco1TargetDetune = vco1BaseDetune + bendAmount;
+        const vco2TargetDetune = vco2BaseDetune + bendAmount;
+        
+        // Apply the detuning with a short ramp time for smooth bending
+        const bendRampTime = 0.02; // 20ms for smooth response
+        vco1.detune.rampTo(vco1TargetDetune, bendRampTime);
+        vco2.detune.rampTo(vco2TargetDetune, bendRampTime);
     }
 
     function handleCC(ccNumber, ccValue) {
-        console.log(`CC Received: Num=${ccNumber}, Val=${ccValue}`);
-        // TODO: Map CC messages to synth parameters
-        // Example: Map CC 74 (usually Filter Cutoff) to filterCutoffSlider
-        // if (ccNumber === 74) {
-        //     const sliderValue = Math.round((ccValue / 127) * (filterCutoffSlider.max - filterCutoffSlider.min) + parseFloat(filterCutoffSlider.min));
-        //     filterCutoffSlider.value = sliderValue;
-        //     filterCutoffSlider.dispatchEvent(new Event('input')); // Trigger update
-        // }
-    }
-
-    function autoSelectMIDIInput(accessParam) { // Accept access object as parameter
-        if (!accessParam) {
-            console.error("autoSelectMIDIInput called without valid access object.");
-            return;
-        }
-
-        const inputs = accessParam.inputs.values();
-        const firstInput = inputs.next().value; // Get the first input device
-
-        if (firstInput) {
-            console.log(`Auto-selecting MIDI input: ${firstInput.name || firstInput.id}`);
-            midiInputSelector.value = firstInput.id; // Update dropdown display
-            startListening(accessParam, firstInput.id); // Pass accessParam AND deviceId
-        } else {
-            console.log("No MIDI input devices found for auto-selection.");
-            // Optionally disable the dropdown or show a message
-             midiInputSelector.disabled = true;
-             const option = new Option("No MIDI devices detected", "");
-             midiInputSelector.innerHTML = ''; // Clear existing options
-             midiInputSelector.add(option);
-        }
-    }
-
-    function startListening(accessParam, deviceId) { // Add accessParam parameter
-        if (!accessParam || !deviceId) {
-            console.error("startListening called with invalid parameters", accessParam, deviceId);
-            return;
-        }
-
-        console.log(`Attempting to start listening on device ID: ${deviceId}`);
-
-        // Remove listener from previous input if any
-        if (midiState.currentInput && midiState.currentInput.onmidimessage) {
-            console.log(`Stopping listener on ${midiState.currentInput.name}`);
-            midiState.currentInput.onmidimessage = null;
-        }
-
-        midiState.currentInput = accessParam.inputs.get(deviceId);
-
-        if (midiState.currentInput) {
-            console.log(`Found device: ${midiState.currentInput.name || midiState.currentInput.id}. Attaching listener.`);
-            midiState.currentInput.onmidimessage = handleMIDIMessage;
-        } else {
-            console.error(`MIDI input device with ID ${deviceId} not found.`);
-            midiState.currentInput = null;
+        console.log(`CC Received: CC#${ccNumber}, Value=${ccValue}`);
+        
+        // Normalize the CC value to 0.0-1.0 range
+        const valueNorm = ccValue / 127;
+        
+        // Map MIDI CC numbers to synth parameters
+        switch(ccNumber) {
+            case 1: // Mod Wheel -> Vibrato Depth
+                if (lfoVibratoDepthSlider) {
+                    // Calculate new value based on slider range
+                    const newValue = Math.round(valueNorm * (lfoVibratoDepthSlider.max - lfoVibratoDepthSlider.min) + parseFloat(lfoVibratoDepthSlider.min));
+                    lfoVibratoDepthSlider.value = newValue;
+                    // Dispatch input event to trigger the UI handler
+                    lfoVibratoDepthSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                break;
+                
+            case 74: // Filter Cutoff
+                if (filterCutoffSlider) {
+                    // Map to filter cutoff (usually 20Hz-20kHz mapped to MIDI note values)
+                    const newValue = Math.round(valueNorm * (filterCutoffSlider.max - filterCutoffSlider.min) + parseFloat(filterCutoffSlider.min));
+                    filterCutoffSlider.value = newValue;
+                    filterCutoffSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                break;
+                
+            case 71: // Filter Resonance/Q
+                if (filterQSlider) {
+                    const newValue = valueNorm * (filterQSlider.max - filterQSlider.min) + parseFloat(filterQSlider.min);
+                    filterQSlider.value = newValue;
+                    filterQSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                break;
+                
+            case 5: // Glide/Portamento Time
+                if (glideSlider) {
+                    const newValue = valueNorm * (glideSlider.max - glideSlider.min) + parseFloat(glideSlider.min);
+                    glideSlider.value = newValue;
+                    glideSlider.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                break;
+                
+            // Add more CC mappings as needed
         }
     }
 
@@ -1013,37 +1293,93 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- Initialization ---
-    // Auto-start audio context when page loads
-    document.addEventListener('click', async function initAudio() {
-        await setupAudio();
-        document.removeEventListener('click', initAudio);
+    // Function to start audio context and ensure everything is initialized
+    async function startAudio() {
+        if (audioStarted) {
+            console.log('Audio already started');
+            return;
+        }
         
-        // Initialize MIDI after audio context is started
-        setupMIDI();
-        
-        // Add event listener for MIDI input selector
-        midiInputSelector.addEventListener('change', function() {
-            if (this.value) {
-                console.log('MIDI input selected:', this.value);
-                // Get the current MIDI access and pass it to startListening
-                if (navigator.requestMIDIAccess) {
-                    navigator.requestMIDIAccess({ sysex: false })
-                        .then(midiAccess => {
-                            startListening(midiAccess, this.value);
-                        });
-                }
+        try {
+            console.log('Starting audio context...');
+            // Create and resume the audio context explicitly
+            await Tone.context.resume();
+            console.log('Audio context state:', Tone.context.state);
+            
+            // Only proceed if the context is running
+            if (Tone.context.state !== 'running') {
+                console.warn('Audio context not running, waiting for user gesture');
+                return;
             }
-        });
-    }, { once: true });
+            
+            await setupAudio();  // Setup all audio components
+            
+            // Make sure oscillators are started
+            if (vco1 && !vco1.started) {
+                console.log('Starting oscillators...');
+                vco1.start();
+                vco1.started = true;
+            }
+            if (vco2 && !vco2.started) {
+                vco2.start();
+                vco2.started = true;
+            }
+            
+            // Initialize MIDI after audio context is started
+            console.log('Setting up MIDI...');
+            // setupMIDI(); // <<< REMOVE OR COMMENT OUT THIS LINE
+            
+            console.log('Audio context started successfully');
+            audioStarted = true;
+        } catch (error) {
+            console.error('Error during audio initialization:', error);
+            // Reset state on error
+            audioStarted = false;
+            startButton.disabled = false;
+            startButton.textContent = 'Start Audio';
+        }
+    }
     
+    // Update the start button to be visible and handle click properly
+    startButton.textContent = 'Start Audio';
+    startButton.style.fontSize = '1em';
+    startButton.style.padding = '10px 20px';
+    startButton.style.backgroundColor = '#4f8eff';
+    startButton.style.color = 'white';
+    startButton.style.border = 'none';
+    startButton.style.borderRadius = '4px';
+    startButton.style.cursor = 'pointer';
+    
+    // Handle click on start button
+    startButton.addEventListener('click', async () => {
+        startButton.textContent = 'Starting...';
+        startButton.disabled = true;
+        
+        try {
+            await ensureAudioContext();
+            
+            if (audioContext.state === 'running') {
+                await startAudio();
+                startButton.textContent = 'Audio Running';
+                startButton.disabled = true;
+                console.log('Audio system fully initialized');
+            } else {
+                throw new Error('Failed to start audio context');
+            }
+        } catch (error) {
+            console.error('Failed to start audio:', error);
+            startButton.textContent = 'Start Audio';
+            startButton.disabled = false;
+            audioStarted = false;
+        }
+    });
+
     // Initialize displays on page load
     initializeDisplays();
     
     // Initial display update for non-audio-dependent controls
     updateAllDisplays();
     
-    // Hide the start button since we'll auto-start on first interaction
-    startButton.textContent = 'Audio will start automatically on first interaction';
-    startButton.style.fontSize = '0.8em';
-
+    // Initialize MIDI at startup to populate the dropdown
+    setupMIDI();
 });
