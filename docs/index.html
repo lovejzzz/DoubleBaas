@@ -172,9 +172,8 @@
             <h2>Bass Guitar Input</h2>
             <div class="bass-container">
                 <div class="bass-head">
-                    <div class="bass-nut"></div>
                     <div class="bass-fretboard">
-                        <!-- Fret markers -->
+                        <!-- Fret markers (position indicators) -->
                         <div class="fret-markers">
                             <div class="fret-marker" data-fret="3"></div>
                             <div class="fret-marker" data-fret="5"></div>
@@ -182,22 +181,7 @@
                             <div class="fret-marker" data-fret="9"></div>
                             <div class="fret-marker double" data-fret="12"></div>
                         </div>
-                        <!-- Frets -->
-                        <div class="frets">
-                            <div class="fret" data-fret="0"></div>
-                            <div class="fret" data-fret="1"></div>
-                            <div class="fret" data-fret="2"></div>
-                            <div class="fret" data-fret="3"></div>
-                            <div class="fret" data-fret="4"></div>
-                            <div class="fret" data-fret="5"></div>
-                            <div class="fret" data-fret="6"></div>
-                            <div class="fret" data-fret="7"></div>
-                            <div class="fret" data-fret="8"></div>
-                            <div class="fret" data-fret="9"></div>
-                            <div class="fret" data-fret="10"></div>
-                            <div class="fret" data-fret="11"></div>
-                            <div class="fret" data-fret="12"></div>
-                        </div>
+                        
                         <!-- Bass Nut (open string section) -->
                         <div class="bass-open-strings">
                             <div class="open-string" data-string="3" data-note="G2">G</div>
@@ -205,38 +189,32 @@
                             <div class="open-string" data-string="1" data-note="A1">A</div>
                             <div class="open-string" data-string="0" data-note="E1">E</div>
                         </div>
-                        <!-- Strings -->
+                        
+                        <!-- Strings - simplified for fretless approach -->
                         <div class="bass-strings-container">
                             <div class="bass-string" data-string="3" data-note="G2">
                                 <div class="string-line"></div>
-                                <div class="string-notes">
-                                    <!-- Notes will be created by JavaScript -->
-                                </div>
+                                <div class="note-dot"></div>
                             </div>
                             <div class="bass-string" data-string="2" data-note="D2">
                                 <div class="string-line"></div>
-                                <div class="string-notes">
-                                    <!-- Notes will be created by JavaScript -->
-                                </div>
+                                <div class="note-dot"></div>
                             </div>
                             <div class="bass-string" data-string="1" data-note="A1">
                                 <div class="string-line"></div>
-                                <div class="string-notes">
-                                    <!-- Notes will be created by JavaScript -->
-                                </div>
+                                <div class="note-dot"></div>
                             </div>
                             <div class="bass-string" data-string="0" data-note="E1">
                                 <div class="string-line"></div>
-                                <div class="string-notes">
-                                    <!-- Notes will be created by JavaScript -->
-                                </div>
+                                <div class="note-dot"></div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="bass-info">
-                    <p>Click on frets to play bass notes</p>
+                    <p>Click on strings to play fretless bass notes</p>
                     <p>Current note: <span id="current-bass-note">None</span></p>
+                    <p>Position: <span id="note-position">None</span></p>
                 </div>
             </div>
         </div>

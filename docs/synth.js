@@ -1387,233 +1387,309 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Define bass string starting notes in MIDI note numbers (E1, A1, D2, G2)
     const bassStringNotes = [28, 33, 38, 43];
-    const numFrets = 13; // 0-12 frets
     
-    // Map to store active notes and their positions
-    const activeNoteElements = new Map();
+    // Map to store active notes
+    const activeNoteDots = new Map();
+    const activeStringElements = new Map();
     
-    // Generate fretboard positions and notes
-    function initializeBassNotes() {
+    // Initialize fretless bass
+    function initializeFretlessBass() {
         const stringElements = document.querySelectorAll('.bass-string');
         
         stringElements.forEach((stringEl) => {
-            // Get the string index from the data attribute directly
             const stringIndex = parseInt(stringEl.dataset.string, 10);
-            const notesContainer = stringEl.querySelector('.string-notes');
             const baseNote = bassStringNotes[stringIndex];
             
-            // Clear any existing note positions
-            notesContainer.innerHTML = '';
+            // Add mouse and touch event listeners for fretless string playing
+            stringEl.addEventListener('mousedown', (e) => {
+                // Calculate the position on the string
+                const rect = stringEl.getBoundingClientRect();
+                const position = (e.clientX - rect.left) / rect.width;
+                playFretlessNote(stringIndex, position);
+            });
             
-            // Create note positions for each fret (starting from 1 to 12)
-            // Skip fret 0 since it's already represented by the open strings in the nut
-            for (let fret = 1; fret < numFrets; fret++) {
-                // Special case for E string (index 0) first fret to display F instead of F#
-                let noteValue;
-                let noteName;
-                
-                if (stringIndex === 0 && fret === 1) {
-                    noteValue = 29; // F note instead of F#
-                    noteName = "F1"; // Explicitly set to F1
-                } else {
-                    noteValue = baseNote + fret;
-                    noteName = calculateNoteName(noteValue);
+            stringEl.addEventListener('mousemove', (e) => {
+                // Only handle slides if the mouse button is pressed
+                if (e.buttons === 1) {
+                    const rect = stringEl.getBoundingClientRect();
+                    const position = (e.clientX - rect.left) / rect.width;
+                    
+                    // Update the position of the active note
+                    if (activeStringElements.has(stringIndex)) {
+                        updateFretlessNotePosition(stringIndex, position);
+                    }
                 }
+            });
+            
+            stringEl.addEventListener('mouseup', () => {
+                releaseFretlessNote(stringIndex);
+            });
+            
+            stringEl.addEventListener('mouseleave', () => {
+                releaseFretlessNote(stringIndex);
+            });
+            
+            // Touch support
+            stringEl.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = stringEl.getBoundingClientRect();
+                const position = (touch.clientX - rect.left) / rect.width;
+                playFretlessNote(stringIndex, position);
+            });
+            
+            stringEl.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = stringEl.getBoundingClientRect();
+                const position = (touch.clientX - rect.left) / rect.width;
                 
-                const notePosition = document.createElement('div');
-                notePosition.className = 'note-position';
-                notePosition.dataset.fret = fret;
-                notePosition.dataset.note = noteValue;
-                notePosition.dataset.noteName = noteName;
-                
-                // Store the string index directly to avoid confusion
-                notePosition.dataset.stringIndex = stringIndex;
-                
-                // For debugging - add visible text for the note names on fret position 1
-                if (fret === 1) {
-                    // Create a small label element
-                    const debugLabel = document.createElement('span');
-                    debugLabel.className = 'debug-note-name';
-                    debugLabel.style.fontSize = '8px';
-                    debugLabel.style.color = 'rgba(255, 255, 255, 0.5)';
-                    debugLabel.style.position = 'absolute';
-                    debugLabel.style.bottom = '2px';
-                    debugLabel.style.left = '2px';
-                    debugLabel.style.pointerEvents = 'none';
-                    debugLabel.textContent = noteName;
-                    notePosition.appendChild(debugLabel);
+                // Update the position of the active note
+                if (activeStringElements.has(stringIndex)) {
+                    updateFretlessNotePosition(stringIndex, position);
                 }
-                
-                // Add event listeners
-                notePosition.addEventListener('mousedown', (e) => {
-                    // Use the stored string index, not the visual position
-                    playBassNote(stringIndex, fret);
-                });
-                
-                notePosition.addEventListener('mouseup', (e) => {
-                    releaseBassNote(stringIndex, fret);
-                });
-                
-                notePosition.addEventListener('mouseleave', (e) => {
-                    releaseBassNote(stringIndex, fret);
-                });
-                
-                // Touch events for mobile
-                notePosition.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    playBassNote(stringIndex, fret);
-                });
-                
-                notePosition.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    releaseBassNote(stringIndex, fret);
-                });
-                
-                notesContainer.appendChild(notePosition);
-            }
+            });
+            
+            stringEl.addEventListener('touchend', () => {
+                releaseFretlessNote(stringIndex);
+            });
         });
         
-        console.log('Bass fretboard initialized with notes, starting from fret 1');
+        console.log('Fretless bass initialized');
     }
     
     // Call the initialization function
-    initializeBassNotes();
+    initializeFretlessBass();
     
-    // Function to play a bass note
-    function playBassNote(stringIndex, fret) {
+    // Function to play a fretless note
+    function playFretlessNote(stringIndex, position) {
         // Make sure audio is started
         if (!audioStarted) {
             startAudio().then(() => {
                 console.log('Audio started from bass note');
-                actuallyPlayBassNote(stringIndex, fret);
+                actuallyPlayFretlessNote(stringIndex, position);
             });
         } else {
-            actuallyPlayBassNote(stringIndex, fret);
+            actuallyPlayFretlessNote(stringIndex, position);
         }
     }
     
-    function actuallyPlayBassNote(stringIndex, fret) {
-        const baseNote = bassStringNotes[stringIndex];
-        // Special case for E string (index 0) first fret to play F instead of F#
-        let midiNote;
-        let noteName;
+    // Function to update the position of an active fretless note
+    function updateFretlessNotePosition(stringIndex, position) {
+        // Ensure the position is between 0 and 1
+        position = Math.max(0, Math.min(1, position));
         
-        if (stringIndex === 0 && fret === 1) {
-            // F note (29) instead of F# (30)
-            midiNote = 29;
-            noteName = "F1"; // Explicitly set to F1
-        } else {
-            midiNote = baseNote + fret;
-            noteName = calculateNoteName(midiNote);
+        // Get MIDI note based on position
+        const baseNote = bassStringNotes[stringIndex];
+        const maxSemitones = 24; // Two octaves range on the string
+        let midiOffset = position * maxSemitones;
+        
+        // Round to the nearest cent (for microtonal effects)
+        const cents = Math.round(midiOffset * 100);
+        midiOffset = cents / 100;
+        
+        const midiNote = baseNote + midiOffset;
+        
+        // Show position information
+        const positionElement = document.getElementById('note-position');
+        if (positionElement) {
+            // Show both the position and cents offset
+            const percentPosition = Math.round(position * 100);
+            positionElement.textContent = `${percentPosition}% (+${cents} cents)`;
         }
         
-        // Find the note element using the data attributes
+        // Update the dot position
+        updateNoteDotPosition(stringIndex, position);
+        
+        // Update the current note display
+        const noteName = calculateNoteNameWithCents(midiNote);
+        const currentBassNoteElement = document.getElementById('current-bass-note');
+        if (currentBassNoteElement) {
+            currentBassNoteElement.textContent = noteName;
+        }
+        
+        // Get the previous note info
+        const previousInfo = activeStringElements.get(stringIndex);
+        
+        // Update the active note info with new position and MIDI note
+        activeStringElements.set(stringIndex, {
+            position: position,
+            midiNote: midiNote,
+            stringElement: previousInfo.stringElement,
+            noteDot: previousInfo.noteDot
+        });
+        
+        // Slide to the new note using glide
+        handleNoteSlide(previousInfo.midiNote, midiNote);
+        
+        console.log(`Sliding fretless note: string ${stringIndex}, position ${position.toFixed(2)}, MIDI note ${midiNote.toFixed(2)} (${noteName})`);
+    }
+    
+    // Actually play the fretless note
+    function actuallyPlayFretlessNote(stringIndex, position) {
+        // Ensure the position is between 0 and 1
+        position = Math.max(0, Math.min(1, position));
+        
+        // Get the string element
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
         if (!stringElement) {
             console.error(`String element not found for string index ${stringIndex}`);
             return;
         }
         
-        const notePosition = stringElement.querySelector(`.note-position[data-fret="${fret}"]`);
-        if (!notePosition) {
-            console.error(`Note position not found for string ${stringIndex}, fret ${fret}`);
+        // Get the note dot element
+        const noteDot = stringElement.querySelector('.note-dot');
+        if (!noteDot) {
+            console.error(`Note dot not found for string ${stringIndex}`);
             return;
         }
         
-        // Add visual feedback
-        notePosition.classList.add('active');
+        // Get MIDI note based on position
+        const baseNote = bassStringNotes[stringIndex];
+        const maxSemitones = 24; // Two octaves range on the string
+        let midiOffset = position * maxSemitones;
+        
+        // Round to the nearest cent (for microtonal effects)
+        const cents = Math.round(midiOffset * 100);
+        midiOffset = cents / 100;
+        
+        const midiNote = baseNote + midiOffset;
+        const noteName = calculateNoteNameWithCents(midiNote);
+        
+        // Update the dot position and make it active
+        updateNoteDotPosition(stringIndex, position);
+        noteDot.classList.add('active');
+        
+        // Mark the string as active
         stringElement.classList.add('active');
         
-        // Store the active note element so we can remove the active class later
-        const noteKey = `${stringIndex}-${fret}`;
-        activeNoteElements.set(noteKey, {
-            notePosition,
-            stringElement,
-            midiNote: midiNote // Store the actual MIDI note value for release
+        // Store active note information
+        activeStringElements.set(stringIndex, {
+            position: position,
+            midiNote: midiNote,
+            stringElement: stringElement,
+            noteDot: noteDot
         });
         
-        // Update current note display
+        // Update the current note display
         const currentBassNoteElement = document.getElementById('current-bass-note');
         if (currentBassNoteElement) {
             currentBassNoteElement.textContent = noteName;
         }
         
+        // Show position information
+        const positionElement = document.getElementById('note-position');
+        if (positionElement) {
+            // Show both the position and cents offset
+            const percentPosition = Math.round(position * 100);
+            positionElement.textContent = `${percentPosition}% (+${cents} cents)`;
+        }
+        
         // Trigger the note using the synth's existing note handling
         handleNoteOn(midiNote, 0.8);
         
-        console.log(`Playing bass note: string ${stringIndex} (${calculateNoteName(baseNote)}), fret ${fret}, MIDI note ${midiNote} (${noteName})`);
+        console.log(`Playing fretless note: string ${stringIndex}, position ${position.toFixed(2)}, MIDI note ${midiNote.toFixed(2)} (${noteName})`);
     }
     
-    // Function to release a bass note
-    function releaseBassNote(stringIndex, fret) {
-        const noteKey = `${stringIndex}-${fret}`;
-        const elements = activeNoteElements.get(noteKey);
+    // Update the note dot position
+    function updateNoteDotPosition(stringIndex, position) {
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (!stringElement) return;
         
-        if (!elements) {
-            // Nothing to release
-            return;
+        const noteDot = stringElement.querySelector('.note-dot');
+        if (!noteDot) return;
+        
+        // Adjust the left position to be proportional to the string length
+        // Add a small offset from the nut (5% of string length)
+        const adjustedPosition = 0.05 + (position * 0.90);
+        
+        // Set the position
+        noteDot.style.left = `${adjustedPosition * 100}%`;
+    }
+    
+    // Function to release a fretless note
+    function releaseFretlessNote(stringIndex) {
+        const info = activeStringElements.get(stringIndex);
+        if (!info) return;
+        
+        // Remove the active class from the note dot
+        if (info.noteDot) {
+            info.noteDot.classList.remove('active');
         }
         
-        // Use the stored MIDI note or calculate it
-        let midiNote;
-        if (elements.midiNote) {
-            midiNote = elements.midiNote;
-        } else {
-            // Special case for E string (index 0) first fret to play F instead of F#
-            if (stringIndex === 0 && fret === 1) {
-                midiNote = 29; // F note instead of F#
-            } else {
-                const baseNote = bassStringNotes[stringIndex];
-                midiNote = baseNote + fret;
-            }
+        // Remove the active class from the string
+        if (info.stringElement) {
+            info.stringElement.classList.remove('active');
         }
         
-        // Find and remove the active classes
-        elements.notePosition.classList.remove('active');
+        // Get the MIDI note to release
+        const midiNote = info.midiNote;
         
-        // Only remove active class from string if no other notes are active on this string
-        let hasActiveNotes = false;
-        activeNoteElements.forEach((value, key) => {
-            if (key.startsWith(`${stringIndex}-`) && key !== noteKey) {
-                hasActiveNotes = true;
-            }
-        });
+        // Remove from the active notes map
+        activeStringElements.delete(stringIndex);
         
-        if (!hasActiveNotes) {
-            elements.stringElement.classList.remove('active');
-        }
-        
-        activeNoteElements.delete(noteKey);
-        
-        // Update current note display if no notes are active
-        if (activeNoteElements.size === 0) {
+        // Update displays
+        if (activeStringElements.size === 0) {
             const currentBassNoteElement = document.getElementById('current-bass-note');
             if (currentBassNoteElement) {
                 currentBassNoteElement.textContent = 'None';
+            }
+            
+            const positionElement = document.getElementById('note-position');
+            if (positionElement) {
+                positionElement.textContent = 'None';
             }
         }
         
         // Trigger note off
         handleNoteOff(midiNote);
         
-        console.log(`Released bass note: string ${stringIndex}, fret ${fret}, MIDI note ${midiNote} (${calculateNoteName(midiNote)})`);
+        console.log(`Released fretless note: string ${stringIndex}, MIDI note ${midiNote.toFixed(2)}`);
     }
     
-    // Function to calculate note name from MIDI note number
-    function calculateNoteName(midiNote) {
+    // Function to calculate note name from MIDI note number with cents
+    function calculateNoteNameWithCents(midiNote) {
         const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
         
-        // Standard formula for MIDI note conversion
-        const octave = Math.floor(midiNote / 12) - 1;
-        const noteIndex = midiNote % 12;
+        // Get the whole number part
+        const wholeMidiNote = Math.floor(midiNote);
+        const cents = Math.round((midiNote - wholeMidiNote) * 100);
+        
+        // Calculate the standard note name
+        const octave = Math.floor(wholeMidiNote / 12) - 1;
+        const noteIndex = wholeMidiNote % 12;
         const noteName = noteNames[noteIndex];
         
         // Special case for the E1-F1 boundary
-        if (midiNote === 29) {
-            return "F1"; // Explicitly handle MIDI note 29 as F1
+        if (midiNote >= 28 && midiNote < 29) {
+            // If we're between E1 and F1
+            if (cents > 0) {
+                return `E1 +${cents}¢`;
+            } else {
+                return `E1`;
+            }
         }
         
-        return noteName + octave;
+        // Add cents information if needed
+        if (cents > 0) {
+            return `${noteName}${octave} +${cents}¢`;
+        } else {
+            return `${noteName}${octave}`;
+        }
+    }
+    
+    // Handle note sliding (portamento)
+    function handleNoteSlide(fromMidiNote, toMidiNote) {
+        // Update oscillator frequencies with glide
+        if (vco1 && vco2) {
+            const fromFreq = midiToFreq(fromMidiNote);
+            const toFreq = midiToFreq(toMidiNote);
+            
+            // Use exponential ramp for more natural pitch slides
+            const glideTime = parseFloat(glideSlider.value);
+            vco1.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
+            vco2.frequency.exponentialRampToValueAtTime(toFreq, audioContext.currentTime + glideTime);
+        }
     }
 
     // Set up event listeners for the open strings
@@ -1651,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // An open string is just fret 0
         const baseNote = bassStringNotes[stringIndex];
         const midiNote = baseNote; // fret 0 = base note
-        const noteName = calculateNoteName(midiNote);
+        const noteName = calculateNoteNameWithCents(midiNote);
         
         // Add active class to the open string element
         const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
@@ -1669,6 +1745,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentBassNoteElement = document.getElementById('current-bass-note');
         if (currentBassNoteElement) {
             currentBassNoteElement.textContent = noteName;
+        }
+        
+        // Show position information
+        const positionElement = document.getElementById('note-position');
+        if (positionElement) {
+            positionElement.textContent = "0% (open)";
         }
         
         // Trigger the note using the synth's existing note handling
@@ -1701,9 +1783,15 @@ document.addEventListener('DOMContentLoaded', () => {
             currentBassNoteElement.textContent = 'None';
         }
         
+        // Update position display
+        const positionElement = document.getElementById('note-position');
+        if (positionElement) {
+            positionElement.textContent = 'None';
+        }
+        
         // Trigger note off
         handleNoteOff(midiNote);
         
-        console.log(`Released open string: ${stringIndex}, MIDI note ${midiNote} (${calculateNoteName(midiNote)})`);
+        console.log(`Released open string: ${stringIndex}, MIDI note ${midiNote} (${calculateNoteNameWithCents(midiNote)})`);
     }
 });

@@ -23,14 +23,6 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.bass-nut {
-    height: 8px;
-    width: 100%;
-    background-color: #FFFFF0; /* Ivory */
-    border-radius: 2px;
-    margin-bottom: 10px;
-}
-
 .bass-fretboard {
     position: relative;
     width: 100%;
@@ -44,7 +36,7 @@
     box-sizing: border-box; /* Include padding in width calculation */
 }
 
-/* Fret markers (dots on the fretboard) */
+/* Fret markers (position indicators for fretless bass) */
 .fret-markers {
     position: absolute;
     width: 100%;
@@ -58,11 +50,12 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #FFFFF0; /* Ivory */
+    background-color: rgba(255, 255, 255, 0.3); /* Subtle dots */
     top: 50%;
     transform: translateY(-50%);
 }
 
+/* Position markers at standard fret positions */
 .fret-marker[data-fret="3"] {
     left: 25%;
 }
@@ -83,35 +76,10 @@
     left: 80%;
     width: 10px;
     height: 10px;
-    box-shadow: 0 -15px 0 #FFFFF0, 0 15px 0 #FFFFF0; /* Creates double dots */
+    box-shadow: 0 -15px 0 rgba(255, 255, 255, 0.3), 0 15px 0 rgba(255, 255, 255, 0.3); /* Creates double dots */
 }
 
-/* Frets (the metal bars) */
-.frets {
-    position: absolute;
-    width: calc(100% - 30px); /* Account for the nut section width */
-    right: 0;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(12, 1fr); /* Match the note positions grid */
-    z-index: 2;
-    pointer-events: none;
-}
-
-.fret {
-    position: relative;
-    height: 100%;
-    border-right: 2px solid #D0D0D0; /* Silver color for fret wire */
-}
-
-.fret:first-child {
-    border-left: none;
-}
-
-.fret:last-child {
-    border-right: 4px solid #D0D0D0; /* Thicker last fret */
-}
-
+/* Bass strings container - positioned for fretless style */
 .bass-strings-container {
     position: absolute;
     width: calc(100% - 30px); /* Account for the nut width */
@@ -121,11 +89,12 @@
     display: flex;
     flex-direction: column;
     justify-content: space-evenly; /* Evenly distribute the strings */
-    padding: 0; /* Remove padding that might affect alignment */
-    z-index: 3; /* Ensure strings are above frets */
+    padding: 0;
+    z-index: 3;
     box-sizing: border-box;
 }
 
+/* Fretless bass strings */
 .bass-string {
     position: relative;
     width: 100%;
@@ -133,15 +102,17 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    cursor: pointer; /* Entire string is clickable */
 }
 
+/* String lines with varying thickness */
 .string-line {
     position: absolute;
     top: 50%;
     left: 0;
     right: 0;
-    height: 2px; /* Default height */
-    background-color: #C0C0C0; /* Default color */
+    height: 2px;
+    background-color: #C0C0C0;
     transform: translateY(-50%);
     z-index: 1;
 }
@@ -166,39 +137,36 @@
     background-color: #A0A0A0;
 }
 
-.string-notes {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(12, 1fr); /* 12 columns for frets 1-12 */
-    width: 100%;
-    height: 100%;
+/* Fretless note position indicators */
+.note-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(79, 142, 255, 0.5);
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    transition: all 0.2s;
+    pointer-events: none; /* Let click events pass through to the string */
+    opacity: 0;
 }
 
-.note-position {
-    position: relative;
-    height: 100%;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    transition: background-color 0.2s;
-    /* Make sure each note position is perfectly aligned with frets */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.note-dot.active {
+    opacity: 1;
+    background-color: #4f8eff;
+    box-shadow: 0 0 8px #4f8eff;
+    width: 14px;
+    height: 14px;
 }
 
-.note-position:hover {
-    background-color: rgba(79, 142, 255, 0.3);
-}
-
-.note-position.active {
-    background-color: rgba(79, 142, 255, 0.7);
-}
-
+/* String activation effects */
 .bass-string.active .string-line {
     background-color: #4f8eff; /* Highlight color when playing */
     box-shadow: 0 0 10px #4f8eff;
 }
 
+/* Info display */
 .bass-info {
     margin-top: 15px;
     text-align: center;
@@ -242,30 +210,6 @@
     cursor: pointer;
     transition: background-color 0.2s;
     user-select: none;
-}
-
-/* Remove the extra margins we added earlier and use better positioning */
-.bass-string:nth-child(1), .open-string[data-string="3"],
-.bass-string:nth-child(2), .open-string[data-string="2"],
-.bass-string:nth-child(3), .open-string[data-string="1"],
-.bass-string:nth-child(4), .open-string[data-string="0"] {
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-/* Use flexbox positioning to ensure perfect alignment */
-.bass-strings-container, .bass-open-strings {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 10px 0;
-}
-
-.bass-string, .open-string {
-    flex: 1;
-    height: 30px;
-    display: flex;
-    align-items: center;
 }
 
 .open-string:hover {
