@@ -1405,8 +1405,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear any existing note positions
             notesContainer.innerHTML = '';
             
-            // Create note positions for each fret (0-12)
-            for (let fret = 0; fret < numFrets; fret++) {
+            // Create note positions for each fret (starting from 1 to 12)
+            // Skip fret 0 since it's already represented by the open strings in the nut
+            for (let fret = 1; fret < numFrets; fret++) {
                 // Special case for E string (index 0) first fret to display F instead of F#
                 let noteValue;
                 let noteName;
@@ -1472,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        console.log('Bass fretboard initialized with notes');
+        console.log('Bass fretboard initialized with notes, starting from fret 1');
     }
     
     // Call the initialization function
@@ -1647,21 +1648,62 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to play an open string (fret 0)
     function playOpenString(stringIndex) {
-        playBassNote(stringIndex, 0);
+        // An open string is just fret 0
+        const baseNote = bassStringNotes[stringIndex];
+        const midiNote = baseNote; // fret 0 = base note
+        const noteName = calculateNoteName(midiNote);
+        
         // Add active class to the open string element
         const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
         if (openString) {
             openString.classList.add('active');
         }
+        
+        // Find the corresponding string element
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (stringElement) {
+            stringElement.classList.add('active');
+        }
+        
+        // Update current note display
+        const currentBassNoteElement = document.getElementById('current-bass-note');
+        if (currentBassNoteElement) {
+            currentBassNoteElement.textContent = noteName;
+        }
+        
+        // Trigger the note using the synth's existing note handling
+        handleNoteOn(midiNote, 0.8);
+        
+        console.log(`Playing open string: ${stringIndex}, MIDI note ${midiNote} (${noteName})`);
     }
     
     // Function to release an open string
     function releaseOpenString(stringIndex) {
-        releaseBassNote(stringIndex, 0);
+        // An open string is just fret 0
+        const baseNote = bassStringNotes[stringIndex];
+        const midiNote = baseNote; // fret 0 = base note
+        
         // Remove active class from the open string element
         const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
         if (openString) {
             openString.classList.remove('active');
         }
+        
+        // Find the corresponding string element
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (stringElement) {
+            stringElement.classList.remove('active');
+        }
+        
+        // Update current note display if no notes are active
+        const currentBassNoteElement = document.getElementById('current-bass-note');
+        if (currentBassNoteElement) {
+            currentBassNoteElement.textContent = 'None';
+        }
+        
+        // Trigger note off
+        handleNoteOff(midiNote);
+        
+        console.log(`Released open string: ${stringIndex}, MIDI note ${midiNote} (${calculateNoteName(midiNote)})`);
     }
 });

@@ -129,18 +129,17 @@
     position: relative;
     width: 100%;
     height: 30px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    margin: 5px 0;
 }
 
 .string-line {
     position: absolute;
-    width: 100%;
+    top: 50%;
+    left: 0;
+    right: 0;
     height: 2px;
-    background-color: #C0C0C0; /* Silver */
-    transition: height 0.05s, background-color 0.05s;
+    background-color: #C0C0C0;
+    transform: translateY(-50%);
     z-index: 1;
 }
 
@@ -165,22 +164,26 @@
 }
 
 .string-notes {
-    position: absolute;
+    position: relative;
     display: flex;
-    width: 100%;
     height: 100%;
-    z-index: 3;
+    width: 100%;
+    z-index: 2;
+}
+
+/* Now that we start from fret 1, make sure we position them correctly */
+.string-notes {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr); /* 12 columns for frets 1-12 */
 }
 
 .note-position {
     position: relative;
     flex: 1;
     height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: background-color 0.1s;
+    transition: background-color 0.2s;
 }
 
 .note-position:hover {
