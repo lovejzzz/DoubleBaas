@@ -92,14 +92,14 @@
     width: calc(100% - 30px); /* Account for the nut section width */
     right: 0;
     height: 100%;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr); /* Match the note positions grid */
     z-index: 2;
     pointer-events: none;
 }
 
 .fret {
     position: relative;
-    flex: 1;
     height: 100%;
     border-right: 2px solid #D0D0D0; /* Silver color for fret wire */
 }
@@ -114,22 +114,25 @@
 
 .bass-strings-container {
     position: absolute;
-    display: flex;
-    flex-direction: column;
     width: calc(100% - 30px); /* Account for the nut width */
     height: 100%;
-    justify-content: space-between;
-    padding: 10px 0;
-    z-index: 3; /* Ensure strings are above frets */
     right: 0;
-    margin-left: auto; /* Push to right side */
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Evenly distribute the strings */
+    padding: 0; /* Remove padding that might affect alignment */
+    z-index: 3; /* Ensure strings are above frets */
+    box-sizing: border-box;
 }
 
 .bass-string {
     position: relative;
     width: 100%;
-    height: 30px;
-    margin: 5px 0;
+    height: 25%; /* Each string takes 1/4 of the container height */
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
 }
 
 .string-line {
@@ -137,8 +140,8 @@
     top: 50%;
     left: 0;
     right: 0;
-    height: 2px;
-    background-color: #C0C0C0;
+    height: 2px; /* Default height */
+    background-color: #C0C0C0; /* Default color */
     transform: translateY(-50%);
     z-index: 1;
 }
@@ -165,25 +168,22 @@
 
 .string-notes {
     position: relative;
-    display: flex;
-    height: 100%;
-    width: 100%;
-    z-index: 2;
-}
-
-/* Now that we start from fret 1, make sure we position them correctly */
-.string-notes {
     display: grid;
     grid-template-columns: repeat(12, 1fr); /* 12 columns for frets 1-12 */
+    width: 100%;
+    height: 100%;
 }
 
 .note-position {
     position: relative;
-    flex: 1;
     height: 100%;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
     transition: background-color 0.2s;
+    /* Make sure each note position is perfectly aligned with frets */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .note-position:hover {
@@ -226,13 +226,13 @@
     border-radius: 4px 0 0 4px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 10px 0;
+    justify-content: space-evenly; /* Match the fretboard string spacing */
+    padding: 0;
     z-index: 4; /* Above strings and frets */
 }
 
 .open-string {
-    height: 30px;
+    height: 25%; /* Each open string takes 1/4 of the height */
     display: flex;
     align-items: center;
     justify-content: center;
