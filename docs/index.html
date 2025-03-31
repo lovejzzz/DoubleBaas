@@ -166,6 +166,40 @@
             </div>
         </div>
 
+        <!-- Bass Guitar Module - takes width of two modules -->
+        <div class="module bass-module">
+            <h2>Bass Guitar Input</h2>
+            <div class="bass-container">
+                <div class="bass-head">
+                    <div class="tuning-pegs">
+                        <div class="tuning-peg" data-string="0"></div>
+                        <div class="tuning-peg" data-string="1"></div>
+                        <div class="tuning-peg" data-string="2"></div>
+                        <div class="tuning-peg" data-string="3"></div>
+                    </div>
+                    <div class="bass-nut"></div>
+                    <div class="bass-strings-container">
+                        <div class="bass-string" data-string="0" data-note="E1">
+                            <div class="string-line"></div>
+                        </div>
+                        <div class="bass-string" data-string="1" data-note="A1">
+                            <div class="string-line"></div>
+                        </div>
+                        <div class="bass-string" data-string="2" data-note="D2">
+                            <div class="string-line"></div>
+                        </div>
+                        <div class="bass-string" data-string="3" data-note="G2">
+                            <div class="string-line"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bass-info">
+                    <p>Click on strings to play bass notes</p>
+                    <p>Current note: <span id="current-bass-note">None</span></p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>

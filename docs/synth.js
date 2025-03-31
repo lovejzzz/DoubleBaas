@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         */
     }
 
-    function updateDisplay(key, value, element) {
+     function updateDisplay(key, value, element) {
         if (!displays[key]) return;
          let displayValue = parseFloat(value).toFixed(2); // Default formatting
 
@@ -1382,4 +1382,132 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize MIDI at startup to populate the dropdown
     setupMIDI();
+    
+    // ===== Bass Guitar Module =====
+    
+    // Bass string notes in MIDI note numbers (E1, A1, D2, G2)
+    const bassStringNotes = [28, 33, 38, 43];
+    
+    // Map of MIDI note numbers to note names
+    const noteNames = {
+        28: 'E1',
+        33: 'A1',
+        38: 'D2',
+        43: 'G2'
+    };
+    
+    // Get bass string elements
+    const bassStrings = document.querySelectorAll('.bass-string');
+    const currentBassNoteElement = document.getElementById('current-bass-note');
+    
+    // Set up event listeners for bass strings
+    bassStrings.forEach((string, index) => {
+        string.addEventListener('mousedown', () => {
+            playBassString(index);
+        });
+        
+        string.addEventListener('mouseup', () => {
+            releaseBassString(index);
+        });
+        
+        string.addEventListener('mouseleave', () => {
+            releaseBassString(index);
+        });
+        
+        // Touch events for mobile
+        string.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            playBassString(index);
+        });
+        
+        string.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            releaseBassString(index);
+        });
+    });
+    
+    // Function to play a bass string
+    function playBassString(stringIndex) {
+        // Make sure audio is started
+        if (!audioStarted) {
+            startAudio().then(() => {
+                console.log('Audio started from bass string');
+                actuallyPlayBassString(stringIndex);
+            });
+        } else {
+            actuallyPlayBassString(stringIndex);
+        }
+    }
+    
+    function actuallyPlayBassString(stringIndex) {
+        const midiNote = bassStringNotes[stringIndex];
+        const noteName = noteNames[midiNote] || `Note ${midiNote}`;
+        
+        // Add visual feedback
+        bassStrings[stringIndex].classList.add('active');
+        
+        // Update current note display
+        currentBassNoteElement.textContent = noteName;
+        
+        // Trigger the note using the synth's existing note handling
+        handleNoteOn(midiNote, 0.8);
+        
+        console.log(`Playing bass string ${stringIndex}, note ${noteName} (MIDI: ${midiNote})`);
+    }
+    
+    // Function to release a bass string
+    function releaseBassString(stringIndex) {
+        // Remove visual feedback
+        bassStrings[stringIndex].classList.remove('active');
+        
+        // Update current note display if this was the active string
+        if (currentBassNoteElement.textContent === noteNames[bassStringNotes[stringIndex]]) {
+            currentBassNoteElement.textContent = 'None';
+        }
+        
+        // Trigger note off
+        handleNoteOff(bassStringNotes[stringIndex]);
+        
+        console.log(`Released bass string ${stringIndex}`);
+    }
+    
+    // Add tuning peg functionality (changes the pitch of strings)
+    const tuningPegs = document.querySelectorAll('.tuning-peg');
+    
+    tuningPegs.forEach((peg, index) => {
+        peg.addEventListener('click', () => {
+            tuneString(index);
+        });
+    });
+    
+    // Function to retune a string slightly
+    function tuneString(stringIndex) {
+        // Detune by -2 to +2 semitones
+        const detuneAmount = Math.floor(Math.random() * 5) - 2;
+        const oldMidiNote = bassStringNotes[stringIndex];
+        bassStringNotes[stringIndex] = oldMidiNote + detuneAmount;
+        
+        // Update the note name
+        const newNoteName = calculateNoteName(bassStringNotes[stringIndex]);
+        noteNames[bassStringNotes[stringIndex]] = newNoteName;
+        
+        // Visual feedback for tuning
+        tuningPegs[stringIndex].style.transform = `rotate(${detuneAmount * 45}deg)`;
+        
+        // Play a short preview of the new tuning
+        playBassString(stringIndex);
+        setTimeout(() => {
+            releaseBassString(stringIndex);
+        }, 200);
+        
+        console.log(`Retuned string ${stringIndex} from ${noteNames[oldMidiNote]} to ${newNoteName}`);
+    }
+    
+    // Function to calculate note name from MIDI note number
+    function calculateNoteName(midiNote) {
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const octave = Math.floor(midiNote / 12) - 1;
+        const noteName = noteNames[midiNote % 12];
+        return noteName + octave;
+    }
 });
