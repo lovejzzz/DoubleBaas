@@ -1396,7 +1396,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeBassNotes() {
         const stringElements = document.querySelectorAll('.bass-string');
         
-        stringElements.forEach((stringEl, stringIndex) => {
+        stringElements.forEach((stringEl) => {
+            // Get the string index from the data attribute directly
+            const stringIndex = parseInt(stringEl.dataset.string, 10);
             const notesContainer = stringEl.querySelector('.string-notes');
             const baseNote = bassStringNotes[stringIndex];
             
@@ -1414,8 +1416,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 notePosition.dataset.note = noteValue;
                 notePosition.dataset.noteName = noteName;
                 
+                // Store the string index directly to avoid confusion
+                notePosition.dataset.stringIndex = stringIndex;
+                
                 // Add event listeners
                 notePosition.addEventListener('mousedown', (e) => {
+                    // Use the stored string index, not the visual position
                     playBassNote(stringIndex, fret);
                 });
                 
@@ -1466,10 +1472,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const midiNote = baseNote + fret;
         const noteName = calculateNoteName(midiNote);
         
-        // Find the note element
-        const stringElement = document.querySelectorAll('.bass-string')[stringIndex];
-        const notePosition = stringElement.querySelector(`.note-position[data-fret="${fret}"]`);
+        // Find the note element using the data attributes
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (!stringElement) {
+            console.error(`String element not found for string index ${stringIndex}`);
+            return;
+        }
         
+        const notePosition = stringElement.querySelector(`.note-position[data-fret="${fret}"]`);
         if (!notePosition) {
             console.error(`Note position not found for string ${stringIndex}, fret ${fret}`);
             return;
@@ -1495,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Trigger the note using the synth's existing note handling
         handleNoteOn(midiNote, 0.8);
         
-        console.log(`Playing bass note: string ${stringIndex}, fret ${fret}, MIDI note ${midiNote} (${noteName})`);
+        console.log(`Playing bass note: string ${stringIndex} (${calculateNoteName(baseNote)}), fret ${fret}, MIDI note ${midiNote} (${noteName})`);
     }
     
     // Function to release a bass note
@@ -1536,7 +1546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Trigger note off
         handleNoteOff(midiNote);
         
-        console.log(`Released bass note: string ${stringIndex}, fret ${fret}, MIDI note ${midiNote}`);
+        console.log(`Released bass note: string ${stringIndex}, fret ${fret}, MIDI note ${midiNote} (${calculateNoteName(midiNote)})`);
     }
     
     // Function to calculate note name from MIDI note number
