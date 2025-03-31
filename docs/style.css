@@ -1,0 +1,265 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
+
+:root {
+    --background-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --primary-color: #b45f41; /* A rusty orange-brown color for highlights */
+    --secondary-color: #333333;
+    --border-color: #444444;
+    --control-background: #2c2c2c;
+    --control-handle-color: var(--primary-color);
+    --value-display-bg: #252525;
+    --font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center main container */
+    line-height: 1.6;
+}
+
+h1 {
+    color: var(--text-color);
+    text-align: center;
+    margin-bottom: 30px;
+    font-weight: 500;
+}
+
+.title-image {
+    display: block;
+    margin: 0 auto 30px;
+    max-width: 100%;
+    height: auto;
+}
+
+.synth-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    padding: 20px;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 95%;
+    max-width: 1600px; /* Adjust max-width as needed */
+}
+
+.module {
+    background-color: var(--background-color);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* Make all modules same height */
+    min-height: 350px;
+}
+
+.module h2 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: 400;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column; /* Stack label and control */
+    gap: 8px;
+    align-items: stretch; /* Make controls fill width */
+}
+
+.control-group label {
+    font-size: 0.9em;
+    color: #b0b0b0; /* Slightly lighter grey for labels */
+    margin-bottom: 0; /* Reduced margin */
+    text-align: left;
+    display: flex; /* Align label text and value display */
+    justify-content: space-between;
+    align-items: center;
+}
+
+.control-group .value-display {
+    font-size: 0.8em;
+    color: #999;
+    background-color: var(--value-display-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 30px; /* Ensure space for value */
+    text-align: right;
+}
+
+/* --- Sliders --- */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--control-background);
+    outline: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 5px; /* Add some space above slider */
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--control-handle-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--control-handle-color);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease-in-out;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+    background: #d17a5c; /* Lighter rusty color on hover */
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+    background: #d17a5c;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+    background: #8e4a32; /* Darker rusty color when active */
+}
+
+input[type="range"]:active::-moz-range-thumb {
+    background: #8e4a32;
+}
+
+
+/* --- Buttons & Selects --- */
+button,
+select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--control-background);
+    color: var(--text-color);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+button:hover,
+select:hover {
+    background-color: #383838;
+    border-color: #555555;
+}
+
+button:active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--background-color);
+}
+
+select {
+    width: 100%; /* Make select dropdowns fill width */
+}
+
+/* --- Button and Control Styling --- */
+#start-audio {
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.midi-controls,
+.control-group {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+
+
+.midi-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.midi-controls label {
+    font-size: 0.9em;
+    color: #b0b0b0;
+}
+
+/* Envelope Visualization Styles */
+.envelope-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.envelope-canvas {
+    background-color: #2c2c2c; /* Explicit color instead of CSS variable */
+    border: 1px solid #444444; /* Explicit color instead of CSS variable */
+    border-radius: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    display: block; /* Ensure canvas is displayed as block */
+    width: 280px;
+    height: 140px;
+}
+
+.envelope-values {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 0.8em;
+    color: var(--text-color);
+}
+
+.envelope-values div {
+    background-color: var(--value-display-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .synth-container {
+        grid-template-columns: 1fr; /* Stack modules */
+        padding: 15px;
+    }
+
+    .global-controls {
+        flex-direction: column;
+        align-items: stretch; /* Stretch items full width */
+    }
+
+    .global-controls .control-group,
+    .global-controls .midi-controls,
+    .global-controls button {
+        min-width: unset;
+        width: 100%; /* Ensure they take full width */
+    }
+
+    h1 {
+        font-size: 1.5em;
+    }
+}
