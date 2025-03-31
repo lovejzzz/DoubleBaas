@@ -27,11 +27,58 @@
 }
 
 .bass-nut {
-    height: 8px;
+    height: 20px; /* Increased height to accommodate string labels */
     width: 100%;
     background-color: #FFFFF0; /* Ivory */
     border-radius: 2px;
     margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Open string markers on the nut */
+.open-string-marker {
+    position: absolute;
+    font-weight: bold;
+    color: #8B4513; /* Wood color for contrast against ivory nut */
+    font-size: 14px;
+    text-shadow: 0.5px 0.5px 1px rgba(0, 0, 0, 0.3);
+    height: 20px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: color 0.1s, text-shadow 0.1s;
+    left: -25px; /* Position to the left of the nut */
+}
+
+.open-string-marker:hover {
+    color: #4f8eff;
+    text-shadow: 0 0 3px rgba(79, 142, 255, 0.5);
+}
+
+.open-string-marker.active {
+    color: #4f8eff;
+    text-shadow: 0 0 5px rgba(79, 142, 255, 0.8);
+}
+
+/* Position each string marker correctly */
+.open-string-marker[data-string="3"] {
+    top: 0%;
+}
+
+.open-string-marker[data-string="2"] {
+    top: 25%;
+}
+
+.open-string-marker[data-string="1"] {
+    top: 50%;
+}
+
+.open-string-marker[data-string="0"] {
+    top: 75%;
 }
 
 .bass-fretboard {
@@ -123,44 +170,6 @@
     z-index: 3; /* Ensure strings are above frets */
 }
 
-/* Open strings section styling */
-.open-strings {
-    position: absolute;
-    left: -40px; /* Position it to the left of the fretboard */
-    top: 0;
-    height: 100%;
-    width: 40px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 10px 0;
-    background-color: #8B4513; /* Same wood color as the head */
-    border-radius: 5px 0 0 5px;
-    border-right: 4px solid #FFFFF0; /* Ivory color like the nut */
-    z-index: 4;
-}
-
-.open-string {
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-weight: bold;
-    color: white;
-    font-size: 14px;
-    text-shadow: 1px 1px 2px #000;
-    transition: background-color 0.1s;
-}
-
-.open-string:hover {
-    background-color: rgba(79, 142, 255, 0.3);
-}
-
-.open-string.active {
-    background-color: rgba(79, 142, 255, 0.7);
-}
-
 .bass-string {
     position: relative;
     width: 100%;
@@ -245,4 +254,9 @@
 #current-bass-note {
     font-weight: bold;
     color: #4f8eff;
+}
+
+/* Highlight nut to show it's clickable */
+.bass-nut:hover {
+    box-shadow: 0 0 10px rgba(79, 142, 255, 0.5);
 } 

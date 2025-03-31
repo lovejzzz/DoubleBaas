@@ -1448,31 +1448,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Set up open string handlers
-        const openStrings = document.querySelectorAll('.open-string');
-        openStrings.forEach(openStringEl => {
-            const stringIndex = parseInt(openStringEl.dataset.string, 10);
+        // Set up open string markers handlers
+        const openStringMarkers = document.querySelectorAll('.open-string-marker');
+        openStringMarkers.forEach(markerEl => {
+            const stringIndex = parseInt(markerEl.dataset.string, 10);
             
             // Add mouse events
-            openStringEl.addEventListener('mousedown', () => {
+            markerEl.addEventListener('mousedown', () => {
                 playOpenString(stringIndex);
             });
             
-            openStringEl.addEventListener('mouseup', () => {
+            markerEl.addEventListener('mouseup', () => {
                 releaseOpenString(stringIndex);
             });
             
-            openStringEl.addEventListener('mouseleave', () => {
+            markerEl.addEventListener('mouseleave', () => {
                 releaseOpenString(stringIndex);
             });
             
             // Add touch events
-            openStringEl.addEventListener('touchstart', (e) => {
+            markerEl.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 playOpenString(stringIndex);
             });
             
-            openStringEl.addEventListener('touchend', (e) => {
+            markerEl.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 releaseOpenString(stringIndex);
             });
@@ -1485,8 +1485,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function playOpenString(stringIndex) {
         playBassNote(stringIndex, 0);
         
-        // Add active class to the open string element
-        const openStringEl = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        // Add active class to the open string marker element
+        const openStringEl = document.querySelector(`.open-string-marker[data-string="${stringIndex}"]`);
         if (openStringEl) {
             openStringEl.classList.add('active');
         }
@@ -1496,8 +1496,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function releaseOpenString(stringIndex) {
         releaseBassNote(stringIndex, 0);
         
-        // Remove active class from the open string element
-        const openStringEl = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
+        // Remove active class from the open string marker element
+        const openStringEl = document.querySelector(`.open-string-marker[data-string="${stringIndex}"]`);
         if (openStringEl) {
             openStringEl.classList.remove('active');
         }
