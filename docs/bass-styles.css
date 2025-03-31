@@ -140,23 +140,23 @@
 }
 
 .bass-string:nth-child(1) .string-line {
-    height: 5px; /* E string is thicker */
-    background-color: #A0A0A0;
+    height: 2px; /* G string is thinnest */
+    background-color: #D0D0D0;
 }
 
 .bass-string:nth-child(2) .string-line {
-    height: 4px; /* A string */
-    background-color: #B0B0B0;
-}
-
-.bass-string:nth-child(3) .string-line {
     height: 3px; /* D string */
     background-color: #C0C0C0;
 }
 
+.bass-string:nth-child(3) .string-line {
+    height: 4px; /* A string */
+    background-color: #B0B0B0;
+}
+
 .bass-string:nth-child(4) .string-line {
-    height: 2px; /* G string */
-    background-color: #D0D0D0;
+    height: 5px; /* E string is thickest */
+    background-color: #A0A0A0;
 }
 
 .string-notes {
