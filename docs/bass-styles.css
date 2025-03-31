@@ -40,7 +40,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding-left: 30px; /* Add space for the nut */
+    padding-left: 30px; /* Space for the nut */
+    box-sizing: border-box; /* Include padding in width calculation */
 }
 
 /* Fret markers (dots on the fretboard) */
@@ -88,7 +89,8 @@
 /* Frets (the metal bars) */
 .frets {
     position: absolute;
-    width: 100%;
+    width: calc(100% - 30px); /* Account for the nut section width */
+    right: 0;
     height: 100%;
     display: flex;
     z-index: 2;
@@ -114,11 +116,13 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: calc(100% - 30px); /* Account for the nut width */
     height: 140px;
     justify-content: space-between;
     padding: 10px 0;
     z-index: 3; /* Ensure strings are above frets */
+    right: 0;
+    margin-left: auto; /* Push to right side */
 }
 
 .bass-string {
@@ -235,6 +239,30 @@
     cursor: pointer;
     transition: background-color 0.2s;
     user-select: none;
+}
+
+/* Remove the extra margins we added earlier and use better positioning */
+.bass-string:nth-child(1), .open-string[data-string="3"],
+.bass-string:nth-child(2), .open-string[data-string="2"],
+.bass-string:nth-child(3), .open-string[data-string="1"],
+.bass-string:nth-child(4), .open-string[data-string="0"] {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Use flexbox positioning to ensure perfect alignment */
+.bass-strings-container, .bass-open-strings {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 0;
+}
+
+.bass-string, .open-string {
+    flex: 1;
+    height: 30px;
+    display: flex;
+    align-items: center;
 }
 
 .open-string:hover {
