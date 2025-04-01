@@ -39,6 +39,24 @@ h1 {
     margin: 0 auto 30px;
     max-width: 100%;
     height: auto;
+    cursor: pointer; /* Show pointer cursor on hover */
+    transition: transform 0.1s ease;
+}
+
+/* Title flap animation */
+@keyframes titleFlap {
+    0% { transform: rotateX(0deg); filter: brightness(1); }
+    25% { transform: rotateX(20deg); filter: brightness(1.5); }
+    50% { transform: rotateX(-15deg); filter: brightness(2); }
+    75% { transform: rotateX(10deg); filter: brightness(1.5); }
+    100% { transform: rotateX(0deg); filter: brightness(1); }
+}
+
+.title-flapping {
+    animation: titleFlap 0.5s ease-in-out;
+    transform-origin: center bottom;
+    transform-style: preserve-3d;
+    perspective: 1000px;
 }
 
 .synth-container {

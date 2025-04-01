@@ -1503,6 +1503,121 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Failed to initialize MIDI:', error);
     });
     
+    // ===== Title Click Randomizer =====
+    
+    // Function to randomize all synth settings
+    function randomizeSynthSettings() {
+        console.log('Randomizing all synth settings!');
+        
+        // Add a visual indication that randomization is happening
+        const flashes = 3;
+        let flashCount = 0;
+        
+        // Flash each module briefly
+        const modules = document.querySelectorAll('.module');
+        const flashInterval = setInterval(() => {
+            modules.forEach(module => {
+                if (flashCount % 2 === 0) {
+                    module.style.backgroundColor = 'var(--primary-color)';
+                    module.style.color = 'var(--background-color)';
+                } else {
+                    module.style.backgroundColor = '';
+                    module.style.color = '';
+                }
+            });
+            
+            flashCount++;
+            if (flashCount >= flashes * 2) {
+                clearInterval(flashInterval);
+                modules.forEach(module => {
+                    module.style.backgroundColor = '';
+                    module.style.color = '';
+                });
+            }
+        }, 100);
+        
+        // Randomize sliders
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            if (slider.id) { // Skip any sliders without IDs
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                let randomValue;
+                
+                // Special handling for specific controls
+                if (slider.id === 'amp-sustain') {
+                    // Bias toward higher sustain values (0.4-1.0) to avoid too many short sounds
+                    randomValue = Math.random() * 0.6 + 0.4;
+                } else if (slider.id === 'filter-cutoff') {
+                    // Bias towards middle values for filter cutoff (avoid extremes)
+                    randomValue = min + (Math.random() * 0.6 + 0.2) * (max - min);
+                } else {
+                    // Standard random value within range
+                    randomValue = min + Math.random() * (max - min);
+                }
+                
+                // Set the new value
+                slider.value = randomValue;
+                
+                // Manually trigger input event to update displays and internal state
+                const event = new Event('input', { bubbles: true });
+                slider.dispatchEvent(event);
+            }
+        });
+        
+        // Randomize dropdowns
+        document.querySelectorAll('select').forEach(select => {
+            if (select.id && select.options.length > 0 && select.id !== 'midi-input') {
+                // Skip MIDI input selector
+                const randomIndex = Math.floor(Math.random() * select.options.length);
+                select.selectedIndex = randomIndex;
+                
+                // Manually trigger change event
+                const event = new Event('change', { bubbles: true });
+                select.dispatchEvent(event);
+            }
+        });
+        
+        // Update all displays after randomization
+        updateAllDisplays();
+        
+        // Redraw envelopes
+        if (typeof initEnvelopeVisualization === 'function') {
+            initEnvelopeVisualization('filter', document.getElementById('filter-env-canvas'));
+            initEnvelopeVisualization('amp', document.getElementById('amp-env-canvas'));
+        }
+        
+        // Play a quick sound to demonstrate the new settings
+        if (audioStarted && vco1 && vco2 && ampEnv && filterEnv) {
+            const demoNote = 60; // Middle C
+            setTimeout(() => {
+                // Play a quick note to demonstrate new settings
+                handleNoteOn(demoNote, 0.7);
+                setTimeout(() => {
+                    handleNoteOff(demoNote);
+                }, 500);
+            }, 600); // Wait for flashing to finish
+        }
+    }
+    
+    // Add click event listener to the title image
+    document.addEventListener('DOMContentLoaded', () => {
+        const titleImage = document.querySelector('.title-image');
+        if (titleImage) {
+            titleImage.addEventListener('click', function() {
+                // Add the flapping animation class
+                this.classList.add('title-flapping');
+                
+                // Remove the class after animation finishes
+                setTimeout(() => {
+                    this.classList.remove('title-flapping');
+                }, 500);
+                
+                // Randomize all synth settings
+                randomizeSynthSettings();
+            });
+        }
+    });
+    
     // ===== Bass Guitar Module =====
     
     // Define bass string starting notes in MIDI note numbers (E1, A1, D2, G2)
