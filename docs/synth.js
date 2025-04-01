@@ -627,7 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentMidiInputId = null;
     }
 
-    // Function to activate the MIDI activity light with ADSR envelope
+    // Function to activate the MIDI light with ADSR envelope
     function activateMidiLight(isNoteOn = true) {
         // Get a fresh reference to the light element
         const light = document.getElementById('midi-activity-light');
@@ -650,9 +650,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // For note-on events, follow the ADSR envelope
         if (isNoteOn && ampEnv) {
-            // Add active class immediately
+            // Make sure the light is visible and has active class
             light.classList.add('active');
             light.style.opacity = '0';
+            light.style.display = 'inline-block';
             
             // Get current ADSR values from the amp envelope
             const attack = parseFloat(ampAttackSlider.value);
@@ -665,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const keyframes = [
                     { opacity: 0, boxShadow: '0 0 5px var(--highlight-color)' },
                     { opacity: 1, boxShadow: '0 0 15px var(--highlight-color), 0 0 5px var(--highlight-color)', offset: attack / totalAttackDecayTime },
-                    { opacity: sustain, boxShadow: '0 0 10px var(--highlight-color), 0 0 5px var(--highlight-color)' }
+                    { opacity: sustain, boxShadow: `0 0 ${10 * sustain}px var(--highlight-color), 0 0 ${5 * sustain}px var(--highlight-color)` }
                 ];
                 
                 const timing = {
@@ -684,19 +685,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 light.style.opacity = sustain.toString();
             }
         } else {
-            // For note-off or when amplitude envelope isn't available, fade out
+            // For note-off or when amplitude envelope isn't available
             if (ampEnv) {
+                // Get the release time directly from the amp envelope
                 const release = parseFloat(ampReleaseSlider.value);
+                const currentOpacity = parseFloat(getComputedStyle(light).opacity || '1');
+                
+                // Avoid extremely short release animations
+                const minReleaseDuration = 0.05; // 50ms minimum
+                const effectiveRelease = Math.max(release, minReleaseDuration);
+
+                // Make sure the light is still visible during release
+                light.style.display = 'inline-block';
                 
                 try {
+                    // Create animation that follows the release phase
                     const keyframes = [
-                        { opacity: light.style.opacity || '1' },
-                        { opacity: 0, boxShadow: '0 0 0 var(--highlight-color)' }
+                        { 
+                            opacity: currentOpacity,
+                            boxShadow: window.getComputedStyle(light).boxShadow 
+                        },
+                        { 
+                            opacity: 0,
+                            boxShadow: '0 0 0 var(--highlight-color)' 
+                        }
                     ];
                     
                     const timing = {
-                        duration: release * 1000, // Convert to milliseconds
-                        easing: 'ease-out',
+                        duration: effectiveRelease * 1000, // Convert to milliseconds
+                        easing: 'cubic-bezier(0.1, 0, 0.3, 1)', // More natural release curve
                         fill: 'forwards'
                     };
                     
@@ -706,16 +723,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Remove active class after release time
                     midiLightTimeout = setTimeout(() => {
                         light.classList.remove('active');
-                    }, release * 1000);
+                        console.log('MIDI light release complete');
+                    }, effectiveRelease * 1000);
                     
-                    console.log(`MIDI light release: R=${release}s`);
+                    console.log(`MIDI light release: R=${effectiveRelease}s, starting opacity=${currentOpacity}`);
                 } catch (e) {
                     // Simple fallback
+                    light.style.opacity = '0';
                     light.classList.remove('active');
                     console.warn('Animation API not supported, using fallback for MIDI light fade', e);
                 }
             } else {
                 // Simple fallback if no envelope
+                light.style.opacity = '0';
                 light.classList.remove('active');
             }
         }
@@ -752,12 +772,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`MIDI Note On: note=${data1}, velocity=${data2/127}`);
                     handleNoteOn(data1, data2 / 127);
                 } else if (command === 8 || (command === 9 && data2 === 0)) {
-                    // Note Off - trigger release phase for MIDI light
-                    activateMidiLight(false); // Note off
+                    // Note Off - handleNoteOff will manage the light release
                     console.log(`MIDI Note Off: note=${data1}`);
                     handleNoteOff(data1);
                 } else if (command === 11) {
-                    // Control Change - flash MIDI light briefly
+                    // Control Change - just flash MIDI light briefly
                     const lightFlash = document.getElementById('midi-activity-light');
                     if (lightFlash) {
                         lightFlash.classList.add('active');
@@ -766,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log(`MIDI CC: controller=${data1}, value=${data2}`);
                     handleCC(data1, data2);
                 } else if (command === 14) {
-                    // Pitch Bend - flash MIDI light briefly
+                    // Pitch Bend - just flash MIDI light briefly
                     const lightFlash = document.getElementById('midi-activity-light');
                     if (lightFlash) {
                         lightFlash.classList.add('active');
@@ -840,9 +859,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // If no more notes are active, trigger release
                 if (activeNotes.size === 0) {
+                    // Activate MIDI light release only when all notes are off
+                    activateMidiLight(false);
+                    
                     filterEnv.triggerRelease(time);
                     ampEnv.triggerRelease(time);
-            currentNote = null;
+                    currentNote = null;
                     console.log(`All notes released`);
                 } else {
                     // If other notes are still held, get the highest remaining one
@@ -1743,9 +1765,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Activate the MIDI light with note-off behavior (follow release envelope)
-        activateMidiLight(false);
-        
         // Make sure to cancel any scheduled ramps to avoid stuck notes
         if (vco1 && vco2) {
             try {
@@ -1756,7 +1775,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Trigger note off
+        // Trigger note off (will handle MIDI light release)
         handleNoteOff(midiNote);
         
         // For safety, also trigger a global note-off for all active notes
@@ -1963,10 +1982,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Activate MIDI light with note-off behavior (follow release envelope)
-        activateMidiLight(false);
-        
-        // Trigger note off
+        // Trigger note off (will handle MIDI light release)
         handleNoteOff(midiNote);
         
         console.log(`Released open string: ${stringIndex}, MIDI note ${midiNote} (${calculateNoteNameWithCents(midiNote)})`);
