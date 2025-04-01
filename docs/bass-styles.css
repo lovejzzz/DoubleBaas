@@ -103,6 +103,10 @@
     display: flex;
     align-items: center;
     cursor: pointer; /* Entire string is clickable */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
 
 /* String lines with varying thickness */
@@ -142,37 +146,21 @@
     position: absolute;
     width: 20px;
     height: 20px;
+    background-color: #6b8f3f;
     border-radius: 50%;
-    background-color: rgba(139, 49, 49, 0.6); /* Dark red with transparency */
-    top: 50%;
-    transform: translate(-50%, -50%); /* Center the dot exactly on mouse position */
-    z-index: 10;
-    transition: transform 0.05s, opacity 0.05s; /* Faster transition for immediate feedback */
-    pointer-events: none; /* Let click events pass through to the string */
-    opacity: 0;
-    /* Add drop shadow for better visibility against the dark fretboard */
-    box-shadow: 0 0 4px rgba(139, 49, 49, 0.5);
-    will-change: transform, opacity; /* Optimize for animations */
-    
-    /* Text styling */
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #f0f3e6; /* Off-white color for better visibility */
-    font-size: 0;
-    font-weight: bold;
-    text-shadow: 0 0 2px black;
-    white-space: nowrap;
-    overflow: visible;
-    transition: font-size 0.05s, opacity 0.05s, transform 0.05s;
-    
-    /* Prevent text selection */
+    font-size: 10px;
+    color: #f0f3e6;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    -webkit-touch-callout: none;
-    -webkit-user-drag: none;
 }
 
 .note-dot.active {
