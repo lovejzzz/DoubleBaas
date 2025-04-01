@@ -466,3 +466,22 @@ select {
     font-weight: bold;
     color: var(--highlight-color);
 }
+
+/* Add animation for module shake effect during randomization */
+@keyframes moduleShake {
+    0% { transform: translateX(0); background-color: var(--primary-color); color: var(--background-color); }
+    10% { transform: translateX(-5px); background-color: #ff3333; color: white; }
+    20% { transform: translateX(5px); background-color: var(--primary-color); color: var(--background-color); }
+    30% { transform: translateX(-5px); background-color: #ff3333; color: white; }
+    40% { transform: translateX(5px); background-color: var(--primary-color); color: var(--background-color); }
+    50% { transform: translateX(-5px); background-color: #ff3333; color: white; }
+    60% { transform: translateX(5px); background-color: var(--primary-color); color: var(--background-color); }
+    70% { transform: translateX(-5px); background-color: #ff3333; color: white; }
+    80% { transform: translateX(5px); background-color: var(--primary-color); color: var(--background-color); }
+    90% { transform: translateX(-5px); background-color: #ff3333; color: white; }
+    100% { transform: translateX(0); background-color: var(--primary-color); color: var(--background-color); }
+}
+
+.module-randomizing {
+    animation: moduleShake 0.5s ease-in-out;
+}
