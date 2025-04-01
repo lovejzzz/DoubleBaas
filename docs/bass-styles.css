@@ -1,0 +1,260 @@
+/* Bass Guitar Module Styles */
+.bass-module {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+}
+
+.bass-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.bass-head {
+    width: 100%;
+    position: relative;
+    background-color: #493323; /* Darker weathered wood color */
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.bass-fretboard {
+    position: relative;
+    width: 100%;
+    min-height: 140px;
+    background-color: #3d2d16; /* Darker, more weathered wood */
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-left: 30px; /* Space for the nut */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Fret markers (position indicators for fretless bass) */
+.fret-markers {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.fret-marker {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgba(139, 179, 59, 0.3); /* Subtle green dots */
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Position markers at standard fret positions */
+.fret-marker[data-fret="3"] {
+    left: 25%;
+}
+
+.fret-marker[data-fret="5"] {
+    left: 38%;
+}
+
+.fret-marker[data-fret="7"] {
+    left: 50%;
+}
+
+.fret-marker[data-fret="9"] {
+    left: 63%;
+}
+
+.fret-marker.double[data-fret="12"] {
+    left: 80%;
+    width: 10px;
+    height: 10px;
+    box-shadow: 0 -15px 0 rgba(255, 255, 255, 0.3), 0 15px 0 rgba(255, 255, 255, 0.3); /* Creates double dots */
+}
+
+/* Bass strings container - positioned for fretless style */
+.bass-strings-container {
+    position: absolute;
+    width: calc(100% - 30px); /* Account for the nut width */
+    height: 100%;
+    right: 0;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Evenly distribute the strings */
+    padding: 0;
+    z-index: 3;
+    box-sizing: border-box;
+}
+
+/* Fretless bass strings */
+.bass-string {
+    position: relative;
+    width: 100%;
+    height: 25%; /* Each string takes 1/4 of the container height */
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    cursor: pointer; /* Entire string is clickable */
+}
+
+/* String lines with varying thickness */
+.string-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #C0C0C0;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.bass-string:nth-child(1) .string-line {
+    height: 2px; /* G string is thinnest */
+    background-color: #D0D0D0;
+}
+
+.bass-string:nth-child(2) .string-line {
+    height: 3px; /* D string */
+    background-color: #C0C0C0;
+}
+
+.bass-string:nth-child(3) .string-line {
+    height: 4px; /* A string */
+    background-color: #B0B0B0;
+}
+
+.bass-string:nth-child(4) .string-line {
+    height: 5px; /* E string is thickest */
+    background-color: #A0A0A0;
+}
+
+/* Fretless note position indicators */
+.note-dot {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(139, 49, 49, 0.6); /* Dark red with transparency */
+    top: 50%;
+    transform: translate(-50%, -50%); /* Center the dot exactly on mouse position */
+    z-index: 10;
+    transition: transform 0.05s, opacity 0.05s; /* Faster transition for immediate feedback */
+    pointer-events: none; /* Let click events pass through to the string */
+    opacity: 0;
+    /* Add drop shadow for better visibility against the dark fretboard */
+    box-shadow: 0 0 4px rgba(139, 49, 49, 0.5);
+    will-change: transform, opacity; /* Optimize for animations */
+    
+    /* Text styling */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f0f3e6; /* Off-white color for better visibility */
+    font-size: 0;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    white-space: nowrap;
+    overflow: visible;
+    transition: font-size 0.05s, opacity 0.05s, transform 0.05s;
+    
+    /* Prevent text selection */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+}
+
+.note-dot.active {
+    opacity: 1;
+    background-color: #8b3131; /* Darker red */
+    box-shadow: 0 0 10px #a83a3a, 0 0 5px rgba(139, 49, 49, 0.8);
+    transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
+    font-size: 10px; /* Show text when active */
+    min-width: 30px; /* Ensure enough space for text */
+    height: 20px;
+    padding: 2px 4px;
+    
+    /* Prevent text selection even when active */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+}
+
+/* String activation effects */
+.bass-string.active .string-line {
+    background-color: #a83a3a; /* Red highlight for active strings */
+    box-shadow: 0 0 10px #8b3131;
+}
+
+/* Info display */
+.bass-info {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.bass-info p {
+    margin: 5px 0;
+}
+
+#current-bass-note {
+    font-weight: bold;
+    color: #a83a3a; /* Match the active dot color */
+}
+
+/* Bass open strings (nut) section */
+.bass-open-strings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 100%;
+    background-color: #cec8a6; /* Weathered bone/ivory color */
+    border-right: 2px solid #a8a48f;
+    border-radius: 4px 0 0 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Match the fretboard string spacing */
+    padding: 0;
+    z-index: 4; /* Above strings and frets */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-drag: none; /* Prevent dragging on Safari/WebKit */
+}
+
+.open-string {
+    height: 25%; /* Each open string takes 1/4 of the height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+    -webkit-user-drag: none; /* Prevent dragging */
+    touch-action: manipulation; /* Optimize for touch */
+}
+
+.open-string:hover {
+    background-color: rgba(139, 49, 49, 0.3); /* Dark red hover state */
+}
+
+.open-string.active {
+    background-color: rgba(139, 49, 49, 0.7); /* Dark red active state */
+    color: white;
+} 
