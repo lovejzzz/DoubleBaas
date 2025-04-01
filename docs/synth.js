@@ -644,21 +644,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add active class and ensure it's visible
         light.style.display = 'block';
+        light.style.opacity = '1';
         light.classList.add('active');
         
-        // Set new timeout
+        // Set new timeout with longer duration for better visibility
         midiLightTimeout = setTimeout(() => {
             light.classList.remove('active');
-        }, 150);
+        }, 250); // Longer flash duration (250ms instead of 150ms)
+        
+        console.log('MIDI activity light activated');
     }
 
     async function handleMIDIMessage(event) {
         try {
+            // Log the raw MIDI message for debugging
+            console.log('Raw MIDI message received:', event.data);
+            
             // Ensure audio context is running
             if (audioContext.state !== 'running' || !audioStarted) {
                 console.log('Audio not ready, attempting to initialize...');
                 await ensureAudioContext();
                 if (!audioStarted) {
+                    console.log('Starting audio system from MIDI trigger');
                     await startAudio();
                 }
             }
@@ -667,6 +674,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const [status, data1, data2] = event.data;
             const command = status >> 4;
             const channel = status & 0xf;
+            
+            console.log(`MIDI message decoded: command=${command}, channel=${channel}, data1=${data1}, data2=${data2}`);
 
             // Process MIDI message
             if (audioStarted && audioContext.state === 'running') {
@@ -676,101 +685,106 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle different MIDI message types
                 if (command === 9 && data2 > 0) {
                     // Note On
+                    console.log(`MIDI Note On: note=${data1}, velocity=${data2/127}`);
                     handleNoteOn(data1, data2 / 127);
                 } else if (command === 8 || (command === 9 && data2 === 0)) {
                     // Note Off
+                    console.log(`MIDI Note Off: note=${data1}`);
                     handleNoteOff(data1);
                 } else if (command === 11) {
                     // Control Change
                     handleCC(data1, data2);
+                } else if (command === 14) {
+                    // Pitch Bend
+                    const pitchValue = ((data2 << 7) + data1 - 8192) / 8192;
+                    console.log(`MIDI Pitch Bend: value=${pitchValue.toFixed(3)}`);
+                    handlePitchBend(pitchValue);
+                } else {
+                    console.log(`Unhandled MIDI command: ${command}`);
                 }
             } else {
-                console.warn('Audio system not ready, MIDI message ignored');
+                console.warn('Audio system not ready, MIDI message ignored. Audio state:', audioContext.state, 'audioStarted:', audioStarted);
             }
         } catch (error) {
             console.error('Error processing MIDI message:', error);
         }
     }
 
-    function handleNoteOn(note, velocity) {
+    function handleNoteOn(note, velocity, time = audioContext.currentTime) {
         if (!vco1 || !vco2 || !ampEnv || !filterEnv) {
             console.error('Cannot play note - audio components not initialized');
             return;
         }
 
         try {
-            // Convert MIDI note number to frequency (ensuring we use the right function)
-            const freq = Tone.Frequency(note, "midi").toFrequency();
-            console.log(`Playing note ${note} at frequency ${freq}Hz with velocity ${velocity}`);
+            // Convert MIDI note to frequency directly
+            const freq = midiToFreq(note);
             
-            // Store current note for monophonic handling
-            currentNote = note;
-            
-            // Get glide time from slider
-            const glideTime = parseFloat(glideSlider.value);
-            
-            // Update oscillator frequencies with glide
-            console.log(`Setting oscillator frequencies to ${freq}Hz with glide time ${glideTime}s`);
-            vco1.frequency.rampTo(freq, glideTime);
-            vco2.frequency.rampTo(freq, glideTime);
-            
-            // Trigger envelopes - use properly scaled velocity
-            console.log(`Triggering envelopes with velocity ${velocity}`);
-            
-            // Use immediate triggering with exact time
-            const now = Tone.now();
-            
-            // Make sure attack curve is exponential for smoother start
-            ampEnv.attackCurve = 'exponential';
-            filterEnv.attackCurve = 'exponential';
-            
-            filterEnv.triggerAttack(now);
-            ampEnv.triggerAttack(now, velocity);
-            
-            // Update active notes
-            activeNotes.add(note);
-            console.log(`Note ${note} is now active. Active notes:`, Array.from(activeNotes));
-            
-            // Remove test tone which was causing popping sounds
+            // Only trigger envelope if the sound isn't already playing
+            if (!activeNotes.has(note)) {
+                // Note on - set oscillator frequencies with glide time
+                const glideTime = parseFloat(glideSlider.value);
+                
+                // If it's the first note, set immediately, otherwise use glide
+                if (currentNote === null) {
+                    vco1.frequency.setValueAtTime(freq, time);
+                    vco2.frequency.setValueAtTime(freq, time);
+                } else {
+                    // Use exponential ramp for more natural glide between notes
+                    vco1.frequency.exponentialRampToValueAtTime(freq, time + glideTime);
+                    vco2.frequency.exponentialRampToValueAtTime(freq, time + glideTime);
+                }
+                
+                // Trigger envelope if note is the first one played
+                if (activeNotes.size === 0) {
+                    // Trigger envelopes with velocity scaling
+                    filterEnv.triggerAttack(time, velocity);
+                    ampEnv.triggerAttack(time, velocity);
+                }
+                
+                // Store active note in our set & current note for frequency reference
+                activeNotes.add(note);
+                currentNote = note;
+                
+                console.log(`Note On: ${note} (${freq.toFixed(1)}Hz) at velocity ${velocity}`);
+            } else {
+                console.log(`Note ${note} already active, ignoring`);
+            }
         } catch (error) {
-            console.error('Error in handleNoteOn:', error);
+            console.error(`Error in handleNoteOn(${note}, ${velocity}):`, error);
         }
     }
 
-    function handleNoteOff(note) {
-        // For microtonal notes, convert to the nearest integer
-        const roundedNote = Math.round(note);
-        
-        // Check if the note is active before proceeding
-        if (!activeNotes.has(roundedNote) && !activeNotes.has(note)) {
-            // If the exact note or its rounded version is not active, log and exit
-            console.log(`Note off for inactive note: ${note.toFixed(2)} (rounded: ${roundedNote})`);
-            return;
-        }
-        
-        // Remove from active notes
-        activeNotes.delete(note);
-        activeNotes.delete(roundedNote); // Also remove the rounded version
-        
-        // Check if there are no more active notes
-        if (activeNotes.size === 0) {
-            // Start the release phase by triggering the envelopes
-            try {
-                if (filterEnv) {
-                    filterEnv.triggerRelease();
+    function handleNoteOff(note, time = audioContext.currentTime) {
+        try {
+            // Only handle if the note is actually active
+            if (activeNotes.has(note)) {
+                // Remove the note from our active set
+                activeNotes.delete(note);
+                
+                // If no more notes are active, trigger release
+                if (activeNotes.size === 0) {
+                    filterEnv.triggerRelease(time);
+                    ampEnv.triggerRelease(time);
+                    currentNote = null;
+                    console.log(`All notes released`);
+                } else {
+                    // If other notes are still held, get the highest remaining one
+                    currentNote = Math.max(...Array.from(activeNotes));
+                    const freq = midiToFreq(currentNote);
+                    
+                    // Set the frequency to the highest held note
+                    const glideTime = parseFloat(glideSlider.value);
+                    vco1.frequency.exponentialRampToValueAtTime(freq, time + glideTime);
+                    vco2.frequency.exponentialRampToValueAtTime(freq, time + glideTime);
+                    
+                    console.log(`Released note ${note}, highest remaining: ${currentNote} (${freq.toFixed(1)}Hz)`);
                 }
-                if (ampEnv) {
-                    ampEnv.triggerRelease();
-                }
-                console.log('All notes released, triggered release phase');
-            } catch (error) {
-                console.error('Error triggering release:', error);
+            } else {
+                console.log(`Note ${note} not active, ignoring release`);
             }
-            
-            // Set currentNote to null to indicate no active notes
-            currentNote = null;
-        } else {
-            console.log(`Note ${note.toFixed(2)} released, ${activeNotes.size} notes still active`);
+        } catch (error) {
+            console.error(`Error in handleNoteOff(${note}):`, error);
         }
     }
 
@@ -1327,7 +1341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Initialize MIDI after audio context is started
             console.log('Setting up MIDI...');
-            // setupMIDI(); // <<< REMOVE OR COMMENT OUT THIS LINE
+            setupMIDI(); // Initialize MIDI functionality
             
             console.log('Audio context started successfully');
             audioStarted = true;
@@ -1381,7 +1395,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateAllDisplays();
     
     // Initialize MIDI at startup to populate the dropdown
-    setupMIDI();
+    setupMIDI().then(() => {
+        // Enable the MIDI selector only after setup is complete
+        midiInputSelector.disabled = false;
+        console.log('MIDI system initialized');
+    }).catch(error => {
+        console.error('Failed to initialize MIDI:', error);
+    });
     
     // ===== Bass Guitar Module =====
     

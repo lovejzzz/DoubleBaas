@@ -215,11 +215,11 @@ select {
 }
 
 .midi-light {
-    width: 10px;
-    height: 10px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
     background-color: #333;
-    transition: all 0.1s ease;
+    transition: all 0.15s ease;
     display: inline-block;
     margin-left: 10px;
     border: 1px solid #666;
@@ -227,8 +227,9 @@ select {
 
 .midi-light.active {
     background-color: #a45a52;
-    box-shadow: 0 0 10px #a45a52;
+    box-shadow: 0 0 15px #a45a52, 0 0 5px #a45a52;
     border-color: #a45a52;
+    transform: scale(1.2);
 }
 
 /* Envelope Visualization Styles */
