@@ -1,25 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Global References ---
-    // Add a variable to store the MIDI access promise at the global scope
-    let cachedMidiPromise = null;
-    
-    // UI Elements
-    const startButton = document.getElementById('start-audio');
-    const midiInputSelector = document.getElementById('midi-input');
-    const midiLight = document.getElementById('midi-activity-light');
-    
-    // Global MIDI variables
-    let midiAccess = null;
-    let currentMidiInputId = null;
-    let midiLightTimeout = null;
-    
-    // Store MIDI access promise to prevent multiple permission requests
-    let midiAccessPromise = null;
+    // ==========================================
+    // === Global References and State Variables ===
+    // ==========================================
     
     // Audio system flags
     let audioStarted = false;
-
-    // --- Global References ---
+    
+    // Audio Component References
     let vco1, vco2, vco1Gain, vco2Gain;
     let filterLp, filterHp, filterSweepXFade;
     let filterEnv, ampEnv;
@@ -27,26 +14,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let masterVolume;
     let currentNote = null; // Simple monophonic tracking
     const pitchBendRange = 2; // Semitones for pitch bend +/-
-    let midiActivityLight = null; // Reference to MIDI activity indicator
-    let midiLightTimeout = null; // For handling the light timeout
     const activeNotes = new Set();
 
     // LFO->Parameter Gain Nodes (for controlling modulation depth)
     let lfoFilterModGain, lfoVco1PwmGain, lfoVco2PwmGain, lfoVibratoGain;
-    let filterEnvMod; // Declare filterEnvMod here
+    let filterEnvMod;
 
     // MIDI State
-    let midiAccess = null; // Store MIDI access object
-    let currentMidiInputId = null; // Store the ID of the selected input
-
+    let midiAccess = null;
+    let currentMidiInputId = null;
+    let midiActivityLight = null;
+    let midiLightTimeout = null;
+    let cachedMidiPromise = null; // Cache MIDI access promise to prevent multiple permission requests
+    
+    // ==========================================
     // === DOM Element References ===
+    // ==========================================
+    
     const startButton = document.getElementById('start-audio');
     const midiInputSelector = document.getElementById('midi-input');
     const masterVolumeSlider = document.getElementById('master-volume');
     const glideSlider = document.getElementById('glide');
+    
+    // Assign MIDI activity light to prevent duplicate declaration
     midiActivityLight = document.getElementById('midi-activity-light');
-
-    // ... (rest of your DOM element references are fine) ...
+    
     // VCO1
     const vco1WaveSelect = document.getElementById('vco1-wave');
     const vco1DetuneSlider = document.getElementById('vco1-detune');
@@ -119,7 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Main Audio Setup Function ---
+    // ==========================================
+    // === Main Audio Setup Function ===
+    // ==========================================
+    
     async function setupAudio() {
         if (audioStarted) {
             console.log('Audio already started');
@@ -326,7 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- UI Control Logic ---
+    // ==========================================
+    // === UI Control Logic ===
+    // ==========================================
+    
     function connectUI() {
         // Helper to connect slider/select and update display
         function setupControl(element, parameterUpdater) {
