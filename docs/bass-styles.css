@@ -17,17 +17,17 @@
 .bass-head {
     width: 100%;
     position: relative;
-    background-color: #8B4513; /* Wood color */
+    background-color: #493323; /* Darker weathered wood color */
     border-radius: 10px;
     padding: 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .bass-fretboard {
     position: relative;
     width: 100%;
     min-height: 140px;
-    background-color: #6b4423; /* Darker wood for fretboard */
+    background-color: #3d2d16; /* Darker, more weathered wood */
     border-radius: 5px;
     display: flex;
     flex-direction: column;
@@ -50,7 +50,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.3); /* Subtle dots */
+    background-color: rgba(139, 179, 59, 0.3); /* Subtle green dots */
     top: 50%;
     transform: translateY(-50%);
 }
@@ -143,7 +143,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background-color: rgba(164, 90, 82, 0.6);
+    background-color: rgba(107, 143, 63, 0.6); /* Fallout green */
     top: 50%;
     transform: translate(-50%, -50%); /* Center the dot exactly on mouse position */
     z-index: 10;
@@ -151,94 +151,11 @@
     pointer-events: none; /* Let click events pass through to the string */
     opacity: 0;
     /* Add drop shadow for better visibility against the dark fretboard */
-    box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 4px rgba(139, 179, 59, 0.5);
     will-change: transform, opacity; /* Optimize for animations */
     
     /* Text styling */
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 0;
-    font-weight: bold;
-    text-shadow: 0 0 2px black;
-    white-space: nowrap;
-    overflow: visible;
-    transition: font-size 0.05s, opacity 0.05s, transform 0.05s;
-}
-
-.note-dot.active {
-    opacity: 1;
-    background-color: #a45a52;
-    box-shadow: 0 0 10px #a45a52, 0 0 5px rgba(255, 255, 255, 0.8);
-    transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
-    font-size: 10px; /* Show text when active */
-    min-width: 30px; /* Ensure enough space for text */
-    height: 20px;
-    padding: 2px 4px;
-}
-
-/* String activation effects */
-.bass-string.active .string-line {
-    background-color: #a45a52; /* Highlight color when playing */
-    box-shadow: 0 0 10px #a45a52;
-}
-
-/* Info display */
-.bass-info {
-    margin-top: 15px;
-    text-align: center;
-    font-size: 0.9em;
-}
-
-.bass-info p {
-    margin: 5px 0;
-}
-
-#current-bass-note {
-    font-weight: bold;
-    color: #a45a52;
-}
-
-/* Bass open strings (nut) section */
-.bass-open-strings {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 30px;
-    height: 100%;
-    background-color: #FFFFF0; /* Ivory color for the nut */
-    border-right: 2px solid #A0A0A0;
-    border-radius: 4px 0 0 4px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly; /* Match the fretboard string spacing */
-    padding: 0;
-    z-index: 4; /* Above strings and frets */
-    user-select: none; /* Prevent text selection */
-    -webkit-user-drag: none; /* Prevent dragging on Safari/WebKit */
-}
-
-.open-string {
-    height: 25%; /* Each open string takes 1/4 of the height */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 14px;
-    color: #333;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    user-select: none;
-    -webkit-user-drag: none; /* Prevent dragging */
-    touch-action: manipulation; /* Optimize for touch */
-}
-
-.open-string:hover {
-    background-color: rgba(164, 90, 82, 0.3);
-}
-
-.open-string.active {
-    background-color: rgba(164, 90, 82, 0.7);
-    color: white;
-} 
+  

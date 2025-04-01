@@ -1,15 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap');
 
 :root {
-    --background-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --primary-color: #a45a52; /* Rusty red color for highlights */
-    --secondary-color: #333333;
-    --border-color: #444444;
-    --control-background: #2c2c2c;
+    --background-color: #0e1111; /* Darker almost black-green background */
+    --text-color: #9ead9c; /* Muted green-gray text */
+    --primary-color: #6b8f3f; /* Fallout terminal green */
+    --secondary-color: #1d2b1a; /* Dark green background */
+    --border-color: #3a4a30; /* Medium green border */
+    --control-background: #1a2718; /* Dark green control background */
     --control-handle-color: var(--primary-color);
-    --value-display-bg: #252525;
+    --value-display-bg: #142311; /* Darker green for displays */
     --font-family: 'Inter', sans-serif;
+    --highlight-color: #8fb33b; /* Brighter green for highlights */
+    --pip-color: #5a8e31; /* Pip-boy green */
+    --rusty-accent: #a8833c; /* Fallout rusty amber accent */
 }
 
 body {
@@ -60,6 +63,7 @@ h1 {
     gap: 15px;
     /* Make all modules same height */
     min-height: 350px;
+    box-shadow: 0 0 15px rgba(107, 143, 63, 0.05); /* Green glow */
 }
 
 .module h2 {
@@ -71,6 +75,7 @@ h1 {
     font-weight: 400;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
+    text-shadow: 0 0 10px rgba(107, 143, 63, 0.3); /* Green text glow */
 }
 
 .control-group {
@@ -135,19 +140,19 @@ input[type="range"]::-moz-range-thumb {
 }
 
 input[type="range"]:hover::-webkit-slider-thumb {
-    background: #bf6b63; /* Lighter rusty color on hover */
+    background: var(--highlight-color); /* Brighter green on hover */
 }
 
 input[type="range"]:hover::-moz-range-thumb {
-    background: #bf6b63;
+    background: var(--highlight-color);
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
-    background: #834640; /* Darker rusty color when active */
+    background: var(--pip-color); /* Darker Pip-boy green when active */
 }
 
 input[type="range"]:active::-moz-range-thumb {
-    background: #834640;
+    background: var(--pip-color);
 }
 
 
@@ -226,9 +231,9 @@ select {
 }
 
 .midi-light.active {
-    background-color: #a45a52;
-    box-shadow: 0 0 15px #a45a52, 0 0 5px #a45a52;
-    border-color: #a45a52;
+    background-color: var(--highlight-color);
+    box-shadow: 0 0 15px var(--highlight-color), 0 0 5px var(--highlight-color);
+    border-color: var(--highlight-color);
     transform: scale(1.2);
 }
 
@@ -327,10 +332,10 @@ select {
 .bass-head {
     width: 100%;
     position: relative;
-    background-color: #8B4513; /* Wood color */
+    background-color: #493323; /* Darker, more weathered wood */
     border-radius: 10px;
     padding: 15px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .tuning-pegs {
@@ -411,8 +416,8 @@ select {
 }
 
 .bass-string.active .string-line {
-    background-color: #4f8eff; /* Highlight color when playing */
-    box-shadow: 0 0 10px #4f8eff;
+    background-color: var(--highlight-color); /* Highlight with Fallout green */
+    box-shadow: 0 0 10px var(--highlight-color);
 }
 
 .bass-info {
@@ -427,5 +432,5 @@ select {
 
 #current-bass-note {
     font-weight: bold;
-    color: #4f8eff;
+    color: var(--highlight-color);
 }

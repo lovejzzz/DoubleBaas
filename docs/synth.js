@@ -184,16 +184,16 @@ document.addEventListener('DOMContentLoaded', () => {
             filterEnv.connect(filterEnvMod);
             filterEnvMod.connect(filterLp.detune);
             filterEnvMod.connect(filterHp.detune);
-            
+
             console.log('Filter chain created and connected');
 
             // Create oscillators with explicit phase
             vco1 = new Tone.Oscillator({
-                frequency: 440,
-                detune: parseFloat(vco1DetuneSlider.value),
+                 frequency: 440,
+                 detune: parseFloat(vco1DetuneSlider.value),
                 type: vco1WaveSelect.value === 'pulse' ? 'square' : vco1WaveSelect.value,
                 phase: 0
-            });
+             });
 
             vco2 = new Tone.Oscillator({
                 frequency: 440,
@@ -231,10 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 -3000 * parseFloat(filterLfoAmtSlider.value),
                 3000 * parseFloat(filterLfoAmtSlider.value)
             );
-            
+
             lfoVibratoGain = new Tone.Scale(
                 -parseFloat(lfoVibratoDepthSlider.value),
-                parseFloat(lfoVibratoDepthSlider.value)
+                 parseFloat(lfoVibratoDepthSlider.value)
             );
 
             // Connect LFO modulation
@@ -253,11 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 lfo.start();
                 
                 console.log('Starting VCO1...');
-                vco1.start();
+            vco1.start();
                 vco1.started = true;
                 
                 console.log('Starting VCO2...');
-                vco2.start();
+            vco2.start();
                 vco2.started = true;
                 
                 console.log('All oscillators started successfully');
@@ -423,7 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Update Display Values ---
-    function midiToFreq(midiVal) {
+     function midiToFreq(midiVal) {
         // Use Tone.js built-in conversion for accuracy
         return Tone.Frequency(midiVal, "midi").toFrequency();
         
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
         */
     }
 
-     function updateDisplay(key, value, element) {
+    function updateDisplay(key, value, element) {
         if (!displays[key]) return;
          let displayValue = parseFloat(value).toFixed(2); // Default formatting
 
@@ -664,13 +664,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (audioContext.state !== 'running' || !audioStarted) {
                 console.log('Audio not ready, attempting to initialize...');
                 await ensureAudioContext();
-                if (!audioStarted) {
+        if (!audioStarted) {
                     console.log('Starting audio system from MIDI trigger');
                     await startAudio();
                 }
-            }
-
-            // Extract MIDI message components
+        }
+        
+        // Extract MIDI message components
             const [status, data1, data2] = event.data;
             const command = status >> 4;
             const channel = status & 0xf;
@@ -715,7 +715,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Cannot play note - audio components not initialized');
             return;
         }
-
+        
         try {
             // Convert MIDI note to frequency directly
             const freq = midiToFreq(note);
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (activeNotes.size === 0) {
                     filterEnv.triggerRelease(time);
                     ampEnv.triggerRelease(time);
-                    currentNote = null;
+            currentNote = null;
                     console.log(`All notes released`);
                 } else {
                     // If other notes are still held, get the highest remaining one
@@ -1238,10 +1238,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const points = calculateEnvelopePoints();
             console.log('Envelope points:', points);
             
-            // Set default styles
-            ctx.strokeStyle = '#a45a52';
+            // Set default styles with Fallout green
+            ctx.strokeStyle = '#6b8f3f'; // Fallout terminal green
             ctx.lineWidth = 2;
-            ctx.fillStyle = 'rgba(164, 90, 82, 0.2)';
+            ctx.fillStyle = 'rgba(107, 143, 63, 0.2)'; // Fallout green with transparency
             
             // Draw envelope path - proper ADSR mountain shape
             ctx.beginPath();
@@ -1277,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Draw labels for ADSR
             ctx.font = '10px sans-serif';
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#9ead9c'; // Muted green-gray text
             ctx.textAlign = 'center';
             
             // Label each segment
@@ -1291,16 +1291,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Draw a larger, more visible control point
             ctx.beginPath();
             ctx.arc(x, y, 8, 0, Math.PI * 2); // Larger radius (was 6)
-            ctx.fillStyle = '#a45a52'; // Rusty color
+            ctx.fillStyle = '#8fb33b'; // Bright Fallout green
             ctx.fill();
-            ctx.strokeStyle = '#fff';
+            ctx.strokeStyle = '#3a4a30'; // Darker green border
             ctx.lineWidth = 2;
             ctx.stroke();
             
             // Add a highlight ring for better visibility
             ctx.beginPath();
             ctx.arc(x, y, 12, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.strokeStyle = 'rgba(107, 143, 63, 0.3)'; // Fallout green with transparency
             ctx.lineWidth = 1;
             ctx.stroke();
         }
@@ -1358,11 +1358,13 @@ document.addEventListener('DOMContentLoaded', () => {
     startButton.textContent = 'Start Audio';
     startButton.style.fontSize = '1em';
     startButton.style.padding = '10px 20px';
-    startButton.style.backgroundColor = '#a45a52';
-    startButton.style.color = 'white';
+    startButton.style.backgroundColor = '#6b8f3f'; // Fallout terminal green
+    startButton.style.color = '#f0f3e6'; // Off-white text
     startButton.style.border = 'none';
     startButton.style.borderRadius = '4px';
     startButton.style.cursor = 'pointer';
+    startButton.style.textShadow = '0 0 5px rgba(107, 143, 63, 0.5)'; // Green glow around text
+    startButton.style.boxShadow = '0 0 8px rgba(107, 143, 63, 0.3)'; // Subtle button glow
     
     // Handle click on start button
     startButton.addEventListener('click', async () => {
@@ -1387,7 +1389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             audioStarted = false;
         }
     });
-
+    
     // Initialize displays on page load
     initializeDisplays();
     
