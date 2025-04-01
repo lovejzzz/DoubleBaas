@@ -158,4 +158,103 @@
     display: flex;
     align-items: center;
     justify-content: center;
-  
+    color: #f0f3e6; /* Off-white color for better visibility */
+    font-size: 0;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    white-space: nowrap;
+    overflow: visible;
+    transition: font-size 0.05s, opacity 0.05s, transform 0.05s;
+    
+    /* Prevent text selection */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+}
+
+.note-dot.active {
+    opacity: 1;
+    background-color: #6b8f3f; /* Fallout terminal green */
+    box-shadow: 0 0 10px #8fb33b, 0 0 5px rgba(139, 179, 59, 0.8);
+    transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
+    font-size: 10px; /* Show text when active */
+    min-width: 30px; /* Ensure enough space for text */
+    height: 20px;
+    padding: 2px 4px;
+    
+    /* Prevent text selection even when active */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
+}
+
+/* String activation effects */
+.bass-string.active .string-line {
+    background-color: #8fb33b; /* Highlight with Fallout green */
+    box-shadow: 0 0 10px #8fb33b;
+}
+
+/* Info display */
+.bass-info {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+.bass-info p {
+    margin: 5px 0;
+}
+
+#current-bass-note {
+    font-weight: bold;
+    color: #8fb33b; /* Brighter Fallout green */
+}
+
+/* Bass open strings (nut) section */
+.bass-open-strings {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 30px;
+    height: 100%;
+    background-color: #cec8a6; /* Weathered bone/ivory color */
+    border-right: 2px solid #a8a48f;
+    border-radius: 4px 0 0 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly; /* Match the fretboard string spacing */
+    padding: 0;
+    z-index: 4; /* Above strings and frets */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-drag: none; /* Prevent dragging on Safari/WebKit */
+}
+
+.open-string {
+    height: 25%; /* Each open string takes 1/4 of the height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    user-select: none;
+    -webkit-user-drag: none; /* Prevent dragging */
+    touch-action: manipulation; /* Optimize for touch */
+}
+
+.open-string:hover {
+    background-color: rgba(107, 143, 63, 0.3); /* Fallout green hover */
+}
+
+.open-string.active {
+    background-color: rgba(107, 143, 63, 0.7); /* Fallout green active */
+    color: white;
+} 
