@@ -143,7 +143,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background-color: rgba(107, 143, 63, 0.6); /* Fallout green */
+    background-color: rgba(139, 49, 49, 0.6); /* Dark red with transparency */
     top: 50%;
     transform: translate(-50%, -50%); /* Center the dot exactly on mouse position */
     z-index: 10;
@@ -151,7 +151,7 @@
     pointer-events: none; /* Let click events pass through to the string */
     opacity: 0;
     /* Add drop shadow for better visibility against the dark fretboard */
-    box-shadow: 0 0 4px rgba(139, 179, 59, 0.5);
+    box-shadow: 0 0 4px rgba(139, 49, 49, 0.5);
     will-change: transform, opacity; /* Optimize for animations */
     
     /* Text styling */
@@ -177,8 +177,8 @@
 
 .note-dot.active {
     opacity: 1;
-    background-color: #6b8f3f; /* Fallout terminal green */
-    box-shadow: 0 0 10px #8fb33b, 0 0 5px rgba(139, 179, 59, 0.8);
+    background-color: #8b3131; /* Darker red */
+    box-shadow: 0 0 10px #a83a3a, 0 0 5px rgba(139, 49, 49, 0.8);
     transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
     font-size: 10px; /* Show text when active */
     min-width: 30px; /* Ensure enough space for text */
@@ -196,8 +196,8 @@
 
 /* String activation effects */
 .bass-string.active .string-line {
-    background-color: #8fb33b; /* Highlight with Fallout green */
-    box-shadow: 0 0 10px #8fb33b;
+    background-color: #a83a3a; /* Red highlight for active strings */
+    box-shadow: 0 0 10px #8b3131;
 }
 
 /* Info display */
@@ -213,7 +213,7 @@
 
 #current-bass-note {
     font-weight: bold;
-    color: #8fb33b; /* Brighter Fallout green */
+    color: #a83a3a; /* Match the active dot color */
 }
 
 /* Bass open strings (nut) section */
@@ -251,10 +251,10 @@
 }
 
 .open-string:hover {
-    background-color: rgba(107, 143, 63, 0.3); /* Fallout green hover */
+    background-color: rgba(139, 49, 49, 0.3); /* Dark red hover state */
 }
 
 .open-string.active {
-    background-color: rgba(107, 143, 63, 0.7); /* Fallout green active */
+    background-color: rgba(139, 49, 49, 0.7); /* Dark red active state */
     color: white;
 } 
