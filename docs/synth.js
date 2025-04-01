@@ -1,6 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Global References ---
+    // Add a variable to store the MIDI access promise at the global scope
+    let cachedMidiPromise = null;
+    
+    // UI Elements
+    const startButton = document.getElementById('start-audio');
+    const midiInputSelector = document.getElementById('midi-input');
+    const midiLight = document.getElementById('midi-activity-light');
+    
+    // Global MIDI variables
+    let midiAccess = null;
+    let currentMidiInputId = null;
+    let midiLightTimeout = null;
+    
+    // Store MIDI access promise to prevent multiple permission requests
+    let midiAccessPromise = null;
+    
+    // Audio system flags
     let audioStarted = false;
+
+    // --- Global References ---
     let vco1, vco2, vco1Gain, vco2Gain;
     let filterLp, filterHp, filterSweepXFade;
     let filterEnv, ampEnv;
@@ -491,16 +510,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            // Request MIDI access with minimal permissions, explicitly setting sysex to false
-            const options = { sysex: false };
-            midiAccess = await navigator.requestMIDIAccess(options);
+            // Use cached promise if available to prevent multiple permission requests
+            if (!cachedMidiPromise) {
+                console.log('Requesting MIDI access for the first time...');
+                // Request MIDI access with minimal permissions, explicitly setting sysex to false
+                const options = { sysex: false };
+                cachedMidiPromise = navigator.requestMIDIAccess(options);
+            } else {
+                console.log('Reusing existing MIDI access permission');
+            }
+            
+            // Await the shared promise
+            midiAccess = await cachedMidiPromise;
             console.log('MIDI access granted!');
             
             // Setup the input selector
             populateMIDIInputs();
             
-            // Add change event listener to the dropdown
-            midiInputSelector.addEventListener('change', handleMIDIInputChange);
+            // Add change event listener to the dropdown only if it hasn't been added before
+            if (!midiInputSelector._hasChangeListener) {
+                midiInputSelector.addEventListener('change', handleMIDIInputChange);
+                midiInputSelector._hasChangeListener = true;
+            }
             
             // Setup statechange handler for device connect/disconnect
             // Use a simpler approach to avoid permission warnings
@@ -515,22 +546,27 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             
             // Use polling instead of statechange which might require additional permissions
-            const checkInterval = setInterval(checkMIDIDevices, 2000);
+            // Only set up polling if it hasn't been set up before
+            if (!window._midiCheckInterval) {
+                window._midiCheckInterval = setInterval(checkMIDIDevices, 2000);
+            }
             
             // Auto-select the first device if available
             const inputs = Array.from(midiAccess.inputs.values());
-            if (inputs.length > 0) {
+            if (inputs.length > 0 && !currentMidiInputId) {
                 console.log('Auto-selecting first MIDI device:', inputs[0].name);
                 midiInputSelector.value = inputs[0].id;
                 handleMIDIInputChange({ target: { value: inputs[0].id } });
                 activateMidiLight();
             } else {
-                console.log('No MIDI inputs available');
+                console.log('No MIDI inputs available or already selected');
             }
         } catch (error) {
             console.error('Failed to get MIDI access:', error);
             midiInputSelector.innerHTML = '<option>MIDI Access Failed</option>';
             midiInputSelector.disabled = true;
+            // Clear the promise on error so we can try again
+            cachedMidiPromise = null;
         }
     }
     
@@ -1437,9 +1473,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 vco2.started = true;
             }
             
-            // Initialize MIDI after audio context is started
-            console.log('Setting up MIDI...');
-            setupMIDI(); // Initialize MIDI functionality
+            // Don't initialize MIDI here anymore as it's already initialized at startup
+            // This prevents the duplicate permission popup
+            console.log('Using existing MIDI setup');
             
             console.log('Audio context started successfully');
             audioStarted = true;
