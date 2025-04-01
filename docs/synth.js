@@ -487,13 +487,20 @@ document.addEventListener('DOMContentLoaded', () => {
              }
          });
          
-         // Redraw envelope visualizations
-         const filterEnvCanvas = document.getElementById('filter-env-canvas');
-         const ampEnvCanvas = document.getElementById('amp-env-canvas');
-         if (filterEnvCanvas && ampEnvCanvas) {
-             initEnvelopeVisualization('filter', filterEnvCanvas);
-             initEnvelopeVisualization('amp', ampEnvCanvas);
-         }
+         // Redraw envelope visualizations with better timing 
+         // Use requestAnimationFrame to ensure DOM updates have happened
+         requestAnimationFrame(() => {
+             const filterEnvCanvas = document.getElementById('filter-env-canvas');
+             const ampEnvCanvas = document.getElementById('amp-env-canvas');
+             
+             if (filterEnvCanvas) {
+                 initEnvelopeVisualization('filter', filterEnvCanvas);
+             }
+             
+             if (ampEnvCanvas) {
+                 initEnvelopeVisualization('amp', ampEnvCanvas);
+             }
+         });
      }
 
 
@@ -2193,8 +2200,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Redraw envelopes
             if (typeof initEnvelopeVisualization === 'function') {
                 console.log('Redrawing envelopes');
-                initEnvelopeVisualization('filter', document.getElementById('filter-env-canvas'));
-                initEnvelopeVisualization('amp', document.getElementById('amp-env-canvas'));
+                
+                // Need to wait for the next animation frame to ensure values are updated
+                requestAnimationFrame(() => {
+                    const filterEnvCanvas = document.getElementById('filter-env-canvas');
+                    const ampEnvCanvas = document.getElementById('amp-env-canvas');
+                    
+                    if (filterEnvCanvas) {
+                        console.log('Redrawing filter envelope visualization');
+                        initEnvelopeVisualization('filter', filterEnvCanvas);
+                    }
+                    
+                    if (ampEnvCanvas) {
+                        console.log('Redrawing amp envelope visualization');
+                        initEnvelopeVisualization('amp', ampEnvCanvas);
+                    }
+                });
             } else {
                 console.warn('initEnvelopeVisualization function not found');
             }
@@ -2213,6 +2234,22 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.warn('Audio not started or components not initialized, skipping demo note');
             }
+            
+            // Do one more redraw of envelopes after a short delay to ensure they're fully updated
+            setTimeout(() => {
+                const filterEnvCanvas = document.getElementById('filter-env-canvas');
+                const ampEnvCanvas = document.getElementById('amp-env-canvas');
+                
+                if (filterEnvCanvas) {
+                    console.log('Final redraw of filter envelope visualization');
+                    initEnvelopeVisualization('filter', filterEnvCanvas);
+                }
+                
+                if (ampEnvCanvas) {
+                    console.log('Final redraw of amp envelope visualization');
+                    initEnvelopeVisualization('amp', ampEnvCanvas);
+                }
+            }, 300); // Short delay to ensure all values are updated
             
         } catch (error) {
             console.error('Error in randomizeSynthSettings:', error);
