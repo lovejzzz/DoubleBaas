@@ -1225,9 +1225,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Envelope points:', points);
             
             // Set default styles
-            ctx.strokeStyle = '#4f8eff';
+            ctx.strokeStyle = '#a45a52';
             ctx.lineWidth = 2;
-            ctx.fillStyle = 'rgba(79, 142, 255, 0.2)';
+            ctx.fillStyle = 'rgba(164, 90, 82, 0.2)';
             
             // Draw envelope path - proper ADSR mountain shape
             ctx.beginPath();
@@ -1277,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Draw a larger, more visible control point
             ctx.beginPath();
             ctx.arc(x, y, 8, 0, Math.PI * 2); // Larger radius (was 6)
-            ctx.fillStyle = '#4f8eff'; // Explicit color instead of CSS variable
+            ctx.fillStyle = '#a45a52'; // Rusty color
             ctx.fill();
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 2;
@@ -1344,7 +1344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     startButton.textContent = 'Start Audio';
     startButton.style.fontSize = '1em';
     startButton.style.padding = '10px 20px';
-    startButton.style.backgroundColor = '#4f8eff';
+    startButton.style.backgroundColor = '#a45a52';
     startButton.style.color = 'white';
     startButton.style.border = 'none';
     startButton.style.borderRadius = '4px';

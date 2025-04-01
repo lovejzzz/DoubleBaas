@@ -143,7 +143,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background-color: rgba(79, 142, 255, 0.6);
+    background-color: rgba(164, 90, 82, 0.6);
     top: 50%;
     transform: translate(-50%, -50%); /* Center the dot exactly on mouse position */
     z-index: 10;
@@ -169,8 +169,8 @@
 
 .note-dot.active {
     opacity: 1;
-    background-color: #4f8eff;
-    box-shadow: 0 0 10px #4f8eff, 0 0 5px rgba(255, 255, 255, 0.8);
+    background-color: #a45a52;
+    box-shadow: 0 0 10px #a45a52, 0 0 5px rgba(255, 255, 255, 0.8);
     transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
     font-size: 10px; /* Show text when active */
     min-width: 30px; /* Ensure enough space for text */
@@ -180,8 +180,8 @@
 
 /* String activation effects */
 .bass-string.active .string-line {
-    background-color: #4f8eff; /* Highlight color when playing */
-    box-shadow: 0 0 10px #4f8eff;
+    background-color: #a45a52; /* Highlight color when playing */
+    box-shadow: 0 0 10px #a45a52;
 }
 
 /* Info display */
@@ -197,7 +197,7 @@
 
 #current-bass-note {
     font-weight: bold;
-    color: #4f8eff;
+    color: #a45a52;
 }
 
 /* Bass open strings (nut) section */
@@ -235,10 +235,10 @@
 }
 
 .open-string:hover {
-    background-color: rgba(79, 142, 255, 0.3);
+    background-color: rgba(164, 90, 82, 0.3);
 }
 
 .open-string.active {
-    background-color: rgba(79, 142, 255, 0.7);
+    background-color: rgba(164, 90, 82, 0.7);
     color: white;
 } 

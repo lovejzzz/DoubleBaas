@@ -3,7 +3,7 @@
 :root {
     --background-color: #1a1a1a;
     --text-color: #e0e0e0;
-    --primary-color: #b45f41; /* A rusty orange-brown color for highlights */
+    --primary-color: #a45a52; /* Rusty red color for highlights */
     --secondary-color: #333333;
     --border-color: #444444;
     --control-background: #2c2c2c;
@@ -135,19 +135,19 @@ input[type="range"]::-moz-range-thumb {
 }
 
 input[type="range"]:hover::-webkit-slider-thumb {
-    background: #d17a5c; /* Lighter rusty color on hover */
+    background: #bf6b63; /* Lighter rusty color on hover */
 }
 
 input[type="range"]:hover::-moz-range-thumb {
-    background: #d17a5c;
+    background: #bf6b63;
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
-    background: #8e4a32; /* Darker rusty color when active */
+    background: #834640; /* Darker rusty color when active */
 }
 
 input[type="range"]:active::-moz-range-thumb {
-    background: #8e4a32;
+    background: #834640;
 }
 
 
@@ -226,9 +226,9 @@ select {
 }
 
 .midi-light.active {
-    background-color: #00ff00;
-    box-shadow: 0 0 10px #00ff00;
-    border-color: #00ff00;
+    background-color: #a45a52;
+    box-shadow: 0 0 10px #a45a52;
+    border-color: #a45a52;
 }
 
 /* Envelope Visualization Styles */
