@@ -1,8 +1,8 @@
-# Web SEM Synth
+# Double Baas
 
-A browser-based monophonic synthesizer inspired by classic analog synthesizers, built with Web Audio API (Tone.js).
+A browser-based synthesizer with interactive bass guitar interface, inspired by classic analog synthesizers and built with Web Audio API (Tone.js).
 
-![Web SEM Synth](docs/title.png)
+![Double Baas](docs/title.png)
 
 ## Features
 
@@ -10,7 +10,9 @@ A browser-based monophonic synthesizer inspired by classic analog synthesizers, 
 - **State Variable Filter**: 12dB/octave filter with continuous morphing between lowpass, notch, and highpass modes
 - **Dual ADSR Envelopes**: Separate envelopes for amplitude and filter modulation with interactive visualization
 - **LFO Modulation**: Low-frequency oscillator for vibrato, filter modulation, and pulse-width modulation
+- **Interactive Bass Guitar**: Fretless bass guitar interface with microtonal capabilities
 - **MIDI Support**: Connect and play with any MIDI controller
+- **Fallout-Inspired UI**: Retro-futuristic terminal-style interface with green and amber accents
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Technical Details
