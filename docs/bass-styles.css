@@ -140,8 +140,8 @@
 /* Fretless note position indicators */
 .note-dot {
     position: absolute;
-    width: 14px;
-    height: 14px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background-color: rgba(79, 142, 255, 0.6);
     top: 50%;
@@ -153,6 +153,18 @@
     /* Add drop shadow for better visibility against the dark fretboard */
     box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
     will-change: transform, opacity; /* Optimize for animations */
+    
+    /* Text styling */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0;
+    font-weight: bold;
+    text-shadow: 0 0 2px black;
+    white-space: nowrap;
+    overflow: visible;
+    transition: font-size 0.05s, opacity 0.05s, transform 0.05s;
 }
 
 .note-dot.active {
@@ -160,6 +172,10 @@
     background-color: #4f8eff;
     box-shadow: 0 0 10px #4f8eff, 0 0 5px rgba(255, 255, 255, 0.8);
     transform: translate(-50%, -50%) scale(1.2); /* Slightly larger when active */
+    font-size: 10px; /* Show text when active */
+    min-width: 30px; /* Ensure enough space for text */
+    height: 20px;
+    padding: 2px 4px;
 }
 
 /* String activation effects */

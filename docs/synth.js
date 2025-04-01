@@ -1526,36 +1526,34 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to update the position of an active fretless note
     function updateFretlessNotePosition(stringIndex, position) {
-        // Ensure the position is between 0 and 1
+        // Clamp position to 0-1
         position = Math.max(0, Math.min(1, position));
         
-        // Get MIDI note based on position
+        // Get the base note and calculate the offset
         const baseNote = bassStringNotes[stringIndex];
-        const maxSemitones = 24; // Two octaves range on the string
+        const maxSemitones = 24; // Two octaves range
         let midiOffset = position * maxSemitones;
         
-        // Round to the nearest cent (for microtonal effects)
+        // Round to the nearest cent for microtonal effects
         const cents = Math.round(midiOffset * 100);
         midiOffset = cents / 100;
         
         const midiNote = baseNote + midiOffset;
         
-        // Show position information
+        // Show position information - keep empty
         const positionElement = document.getElementById('note-position');
         if (positionElement) {
-            // Show both the position and cents offset
-            const percentPosition = Math.round(position * 100);
-            positionElement.textContent = `${percentPosition}% (+${cents} cents)`;
+            positionElement.textContent = '';
         }
         
         // Update the dot position
-        updateNoteDotPosition(stringIndex, position);
-        
-        // Update the current note display
         const noteName = calculateNoteNameWithCents(midiNote);
+        updateNoteDotPosition(stringIndex, position, noteName);
+        
+        // Update the current note display - keep empty
         const currentBassNoteElement = document.getElementById('current-bass-note');
         if (currentBassNoteElement) {
-            currentBassNoteElement.textContent = noteName;
+            currentBassNoteElement.textContent = '';
         }
         
         // Get the previous note info
@@ -1589,72 +1587,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Actually play the fretless note
-    function actuallyPlayFretlessNote(stringIndex, position) {
-        // Ensure the position is between 0 and 1
-        position = Math.max(0, Math.min(1, position));
-        
-        // Get the string element
-        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
-        if (!stringElement) {
-            console.error(`String element not found for string index ${stringIndex}`);
-            return;
-        }
-        
-        // Get the note dot element
-        const noteDot = stringElement.querySelector('.note-dot');
-        if (!noteDot) {
-            console.error(`Note dot not found for string ${stringIndex}`);
-            return;
-        }
-        
-        // Get MIDI note based on position
-        const baseNote = bassStringNotes[stringIndex];
-        const maxSemitones = 24; // Two octaves range on the string
-        let midiOffset = position * maxSemitones;
-        
-        // Round to the nearest cent (for microtonal effects)
-        const cents = Math.round(midiOffset * 100);
-        midiOffset = cents / 100;
-        
-        const midiNote = baseNote + midiOffset;
-        const noteName = calculateNoteNameWithCents(midiNote);
-        
-        // Update the dot position and make it active
-        updateNoteDotPosition(stringIndex, position);
-        noteDot.classList.add('active');
-        
-        // Mark the string as active
-        stringElement.classList.add('active');
-        
-        // Store active note information
-        activeStringElements.set(stringIndex, {
-            position: position,
-            midiNote: midiNote,
-            stringElement: stringElement,
-            noteDot: noteDot
-        });
-        
-        // Update the current note display
-        const currentBassNoteElement = document.getElementById('current-bass-note');
-        if (currentBassNoteElement) {
-            currentBassNoteElement.textContent = noteName;
-        }
-        
-        // Show position information
-        const positionElement = document.getElementById('note-position');
-        if (positionElement) {
-            // Show both the position and cents offset
-            const percentPosition = Math.round(position * 100);
-            positionElement.textContent = `${percentPosition}% (+${cents} cents)`;
-        }
-        
-        // Trigger the note using the synth's existing note handling
-        handleNoteOn(midiNote, 0.8);
-        
-        console.log(`Playing fretless note: string ${stringIndex}, position ${position.toFixed(2)}, MIDI note ${midiNote.toFixed(2)} (${noteName})`);
-    }
-    
     // Update the note dot position
     function updateNoteDotPosition(stringIndex, position) {
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
@@ -1686,6 +1618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Remove the active class from the note dot
         if (info.noteDot) {
             info.noteDot.classList.remove('active');
+            info.noteDot.textContent = ''; // Clear the note name text
         }
         
         // Remove the active class from the string
@@ -1699,16 +1632,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Remove from the active notes map
         activeStringElements.delete(stringIndex);
         
-        // Update displays
+        // Update displays - keep both empty
         if (activeStringElements.size === 0) {
             const currentBassNoteElement = document.getElementById('current-bass-note');
             if (currentBassNoteElement) {
-                currentBassNoteElement.textContent = 'None';
+                currentBassNoteElement.textContent = '';
             }
             
             const positionElement = document.getElementById('note-position');
             if (positionElement) {
-                positionElement.textContent = 'None';
+                positionElement.textContent = '';
             }
         }
         
@@ -1852,25 +1785,37 @@ document.addEventListener('DOMContentLoaded', () => {
             openString.classList.add('active');
         }
         
-        // Find the corresponding string element
+        // Get the string element and activate its note dot at position 0
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
         if (stringElement) {
             stringElement.classList.add('active');
+            const noteDot = stringElement.querySelector('.note-dot');
+            if (noteDot) {
+                updateNoteDotPosition(stringIndex, 0, noteName);
+                noteDot.classList.add('active');
+            }
         }
         
-        // Update current note display
+        // Store note information in the active elements map
+        activeStringElements.set(stringIndex, {
+            position: 0,
+            midiNote: midiNote,
+            stringElement: stringElement,
+            noteDot: stringElement?.querySelector('.note-dot')
+        });
+        
+        // Blank out the text displays
         const currentBassNoteElement = document.getElementById('current-bass-note');
         if (currentBassNoteElement) {
-            currentBassNoteElement.textContent = noteName;
+            currentBassNoteElement.textContent = '';
         }
         
-        // Show position information
         const positionElement = document.getElementById('note-position');
         if (positionElement) {
-            positionElement.textContent = "0% (open)";
+            positionElement.textContent = '';
         }
         
-        // Trigger the note using the synth's existing note handling
+        // Trigger the note using the synth's note handling
         handleNoteOn(midiNote, 0.8);
         
         console.log(`Playing open string: ${stringIndex}, MIDI note ${midiNote} (${noteName})`);
@@ -1878,37 +1823,130 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Function to release an open string
     function releaseOpenString(stringIndex) {
-        // An open string is just fret 0
-        const baseNote = bassStringNotes[stringIndex];
-        const midiNote = baseNote; // fret 0 = base note
-        
         // Remove active class from the open string element
         const openString = document.querySelector(`.open-string[data-string="${stringIndex}"]`);
         if (openString) {
             openString.classList.remove('active');
         }
         
-        // Find the corresponding string element
+        // Also clear the note dot
         const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
         if (stringElement) {
             stringElement.classList.remove('active');
+            const noteDot = stringElement.querySelector('.note-dot');
+            if (noteDot) {
+                noteDot.classList.remove('active');
+                noteDot.textContent = '';
+            }
         }
         
-        // Update current note display if no notes are active
-        const currentBassNoteElement = document.getElementById('current-bass-note');
-        if (currentBassNoteElement) {
-            currentBassNoteElement.textContent = 'None';
-        }
+        // Get the MIDI note for this string
+        const midiNote = bassStringNotes[stringIndex];
         
-        // Update position display
-        const positionElement = document.getElementById('note-position');
-        if (positionElement) {
-            positionElement.textContent = 'None';
+        // Remove from active elements
+        activeStringElements.delete(stringIndex);
+        
+        // Update displays
+        if (activeStringElements.size === 0) {
+            const currentBassNoteElement = document.getElementById('current-bass-note');
+            if (currentBassNoteElement) {
+                currentBassNoteElement.textContent = '';
+            }
+            
+            const positionElement = document.getElementById('note-position');
+            if (positionElement) {
+                positionElement.textContent = '';
+            }
         }
         
         // Trigger note off
         handleNoteOff(midiNote);
         
         console.log(`Released open string: ${stringIndex}, MIDI note ${midiNote} (${calculateNoteNameWithCents(midiNote)})`);
+    }
+
+    // Update the note dot position
+    function updateNoteDotPosition(stringIndex, position, noteName) {
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (!stringElement) return;
+        
+        const noteDot = stringElement.querySelector('.note-dot');
+        if (!noteDot) return;
+        
+        // Position dot directly where the click happened
+        noteDot.style.left = `${position * 100}%`;
+        noteDot.style.top = '50%';
+        
+        // Set the note name text inside the dot
+        if (noteName) {
+            noteDot.textContent = noteName;
+        }
+        
+        // For debugging
+        console.log(`Note dot placed at ${position * 100}% on string ${stringIndex}`);
+    }
+
+    // Actually play the fretless note
+    function actuallyPlayFretlessNote(stringIndex, position) {
+        // Ensure the position is between 0 and 1
+        position = Math.max(0, Math.min(1, position));
+        
+        // Get the string element
+        const stringElement = document.querySelector(`.bass-string[data-string="${stringIndex}"]`);
+        if (!stringElement) {
+            console.error(`String element not found for string index ${stringIndex}`);
+            return;
+        }
+        
+        // Get the note dot element
+        const noteDot = stringElement.querySelector('.note-dot');
+        if (!noteDot) {
+            console.error(`Note dot not found for string ${stringIndex}`);
+            return;
+        }
+        
+        // Get MIDI note based on position
+        const baseNote = bassStringNotes[stringIndex];
+        const maxSemitones = 24; // Two octaves range on the string
+        let midiOffset = position * maxSemitones;
+        
+        // Round to the nearest cent (for microtonal effects)
+        const cents = Math.round(midiOffset * 100);
+        midiOffset = cents / 100;
+        
+        const midiNote = baseNote + midiOffset;
+        const noteName = calculateNoteNameWithCents(midiNote);
+        
+        // Update the dot position and make it active
+        updateNoteDotPosition(stringIndex, position, noteName);
+        noteDot.classList.add('active');
+        
+        // Mark the string as active
+        stringElement.classList.add('active');
+        
+        // Store active note information
+        activeStringElements.set(stringIndex, {
+            position: position,
+            midiNote: midiNote,
+            stringElement: stringElement,
+            noteDot: noteDot
+        });
+        
+        // Update the current note display - keep this empty now
+        const currentBassNoteElement = document.getElementById('current-bass-note');
+        if (currentBassNoteElement) {
+            currentBassNoteElement.textContent = '';
+        }
+        
+        // Show position information - keep this empty now
+        const positionElement = document.getElementById('note-position');
+        if (positionElement) {
+            positionElement.textContent = '';
+        }
+        
+        // Trigger the note using the synth's existing note handling
+        handleNoteOn(midiNote, 0.8);
+        
+        console.log(`Playing fretless note: string ${stringIndex}, position ${position.toFixed(2)}, MIDI note ${midiNote.toFixed(2)} (${noteName})`);
     }
 });
