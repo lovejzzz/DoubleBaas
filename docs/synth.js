@@ -327,42 +327,48 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function connectUI() {
         // Helper to connect slider/select and update display
-        function setupControl(element, parameterUpdater) {
-            const displayKey = element.id;
-            const isSlider = element.type === 'range';
-
-            element.addEventListener('input', (e) => {
-                const value = e.target.type === 'range' ? parseFloat(e.target.value) : e.target.value;
-                 if(audioStarted) { // Only update Tone nodes if audio is running
-                    parameterUpdater(value, e.target);
-                 }
-                 updateDisplay(displayKey, value, e.target);
-            });
-
-            // Add double-click listener for sliders to reset to default
-            if (isSlider) {
-                element.addEventListener('dblclick', (e) => {
-                    const defaultValue = e.target.defaultValue;
-                    console.log(`Resetting ${displayKey} to default: ${defaultValue}`);
-                    e.target.value = defaultValue; // Reset slider position
-                    // Manually trigger the input event to update audio param and display
-                    e.target.dispatchEvent(new Event('input', { bubbles:true }));
-                });
+        function setupControl(element, parameterUpdater, displayName) {
+            if (!element) {
+                console.warn(`Control element not found: ${displayName}`);
+                return;
             }
-
-             // Set initial parameter value if audio already started (e.g., refresh)
-             if(audioStarted) {
-                 const initialValue = element.type === 'range' ? parseFloat(element.value) : element.value;
-                 parameterUpdater(initialValue, element);
-             }
+            
+            const updateParameter = (value) => {
+                if (parameterUpdater) {
+                    parameterUpdater(value);
+                }
+                
+                // Update the display if it exists
+                if (element.id && displays[element.id]) {
+                    updateDisplay(element.id, value, element);
+                }
+            };
+            
+            if (element.tagName === 'SELECT') {
+                // For dropdowns, use change event
+                element.addEventListener('change', function() {
+                    updateParameter(this.value);
+                });
+                
+                // Initial update
+                updateParameter(element.value);
+            } else {
+                // For sliders, use input event for real-time updates
+                element.addEventListener('input', function() {
+                    updateParameter(this.value);
+                });
+                
+                // Initial update
+                updateParameter(element.value);
+            }
         }
 
         // Global Controls
-        setupControl(masterVolumeSlider, (v) => masterVolume.gain.rampTo(v, 0.02));
+        setupControl(masterVolumeSlider, (v) => masterVolume.gain.rampTo(v, 0.02), 'master-volume');
         setupControl(glideSlider, (v) => {
             if (vco1) vco1.portamento = v;
             if (vco2) vco2.portamento = v;
-        });
+        }, 'glide');
 
         // VCO 1
         setupControl(vco1WaveSelect, (v) => {
@@ -372,8 +378,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 vco1.type = newType;
                 // vco1.width.value = (v === 'pulse') ? 0.5 : 0; // PWM TEMPORARILY DISABLED
             }
-        });
-        setupControl(vco1DetuneSlider, (v) => { if(vco1) vco1.detune.rampTo(v, 0.02); }); // Vibrato LFO is additive
+        }, 'vco1-wave');
+        setupControl(vco1DetuneSlider, (v) => { if(vco1) vco1.detune.rampTo(v, 0.02); }, 'vco1-detune'); // Vibrato LFO is additive
         // setupControl(vco1PwmDepthSlider, (v) => { if(lfoVco1PwmGain) lfoVco1PwmGain.max = v * 0.5; }); // PWM TEMPORARILY DISABLED
         // setupControl(vco1PwmDepthSlider, (v) => { if(lfoVco1PwmGain) lfoVco1PwmGain.max = v; }); // PWM TEMPORARILY DISABLED
 
@@ -385,14 +391,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 vco2.type = newType;
                 // vco2.width.value = (v === 'pulse') ? 0.5 : 0; // PWM TEMPORARILY DISABLED
             }
-        } );
-        setupControl(vco2DetuneSlider, (v) => { if(vco2) vco2.detune.rampTo(v, 0.02); }); // Vibrato LFO is additive
+        } , 'vco2-wave');
+        setupControl(vco2DetuneSlider, (v) => { if(vco2) vco2.detune.rampTo(v, 0.02); }, 'vco2-detune'); // Vibrato LFO is additive
         // setupControl(vco2PwmDepthSlider, (v) => { if(lfoVco2PwmGain) lfoVco2PwmGain.max = v * 0.5; }); // PWM TEMPORARILY DISABLED
         // setupControl(vco2PwmDepthSlider, (v) => { if(lfoVco2PwmGain) lfoVco2PwmGain.max = v; }); // PWM TEMPORARILY DISABLED
 
         // Mixer
-        setupControl(mixVco1Slider, (v) => { if(vco1Gain) vco1Gain.gain.rampTo(v, 0.02); });
-        setupControl(mixVco2Slider, (v) => { if(vco2Gain) vco2Gain.gain.rampTo(v, 0.02); });
+        setupControl(mixVco1Slider, (v) => { if(vco1Gain) vco1Gain.gain.rampTo(v, 0.02); }, 'mix-vco1');
+        setupControl(mixVco2Slider, (v) => { if(vco2Gain) vco2Gain.gain.rampTo(v, 0.02); }, 'mix-vco2');
 
         // Filter
         setupControl(filterCutoffSlider, (v) => {
@@ -400,42 +406,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const freq = midiToFreq(v);
             filterLp.frequency.rampTo(freq, 0.02);
             filterHp.frequency.rampTo(freq, 0.02);
-        });
+        }, 'filter-cutoff');
         setupControl(filterQSlider, (v) => {
              if (!filterLp || !filterHp) return;
             filterLp.Q.rampTo(v, 0.02);
             filterHp.Q.rampTo(v, 0.02);
-        });
-        setupControl(filterSweepSlider, (v) => { if(filterSweepXFade) filterSweepXFade.fade.rampTo(v, 0.02); });
-        setupControl(filterEnvAmtSlider, (v) => { if(filterEnvMod) filterEnvMod.max = 6000 * v; }); // Adjust max scale based on knob
+        }, 'filter-q');
+        setupControl(filterSweepSlider, (v) => { if(filterSweepXFade) filterSweepXFade.fade.rampTo(v, 0.02); }, 'filter-sweep');
+        setupControl(filterEnvAmtSlider, (v) => { if(filterEnvMod) filterEnvMod.max = 6000 * v; }, 'filter-env-amt'); // Adjust max scale based on knob
         setupControl(filterLfoAmtSlider, (v) => {
              if (!lfoFilterModGain) return;
              const maxModHz = 3000; // Sync with initial value
              lfoFilterModGain.min = -maxModHz * v;
              lfoFilterModGain.max = maxModHz * v;
-        });
+        }, 'filter-lfo-amt');
 
 
         // Filter Env
-        setupControl(filterAttackSlider, (v) => { if(filterEnv) filterEnv.attack = v; });
-        setupControl(filterDecaySlider, (v) => { if(filterEnv) filterEnv.decay = v; });
-        setupControl(filterSustainSlider, (v) => { if(filterEnv) filterEnv.sustain = v; });
-        setupControl(filterReleaseSlider, (v) => { if(filterEnv) filterEnv.release = v; });
+        setupControl(filterAttackSlider, (v) => { if(filterEnv) filterEnv.attack = v; }, 'filter-attack');
+        setupControl(filterDecaySlider, (v) => { if(filterEnv) filterEnv.decay = v; }, 'filter-decay');
+        setupControl(filterSustainSlider, (v) => { if(filterEnv) filterEnv.sustain = v; }, 'filter-sustain');
+        setupControl(filterReleaseSlider, (v) => { if(filterEnv) filterEnv.release = v; }, 'filter-release');
 
         // Amp Env
-        setupControl(ampAttackSlider, (v) => { if(ampEnv) ampEnv.attack = v; });
-        setupControl(ampDecaySlider, (v) => { if(ampEnv) ampEnv.decay = v; });
-        setupControl(ampSustainSlider, (v) => { if(ampEnv) ampEnv.sustain = v; });
-        setupControl(ampReleaseSlider, (v) => { if(ampEnv) ampEnv.release = v; });
+        setupControl(ampAttackSlider, (v) => { if(ampEnv) ampEnv.attack = v; }, 'amp-attack');
+        setupControl(ampDecaySlider, (v) => { if(ampEnv) ampEnv.decay = v; }, 'amp-decay');
+        setupControl(ampSustainSlider, (v) => { if(ampEnv) ampEnv.sustain = v; }, 'amp-sustain');
+        setupControl(ampReleaseSlider, (v) => { if(ampEnv) ampEnv.release = v; }, 'amp-release');
 
         // LFO
-        setupControl(lfoWaveSelect, (v) => { if(lfo) lfo.type = v; });
-        setupControl(lfoRateSlider, (v) => { if(lfo) lfo.frequency.rampTo(v, 0.02); });
+        setupControl(lfoWaveSelect, (v) => { if(lfo) lfo.type = v; }, 'lfo-wave');
+        setupControl(lfoRateSlider, (v) => { if(lfo) lfo.frequency.rampTo(v, 0.02); }, 'lfo-rate');
         setupControl(lfoVibratoDepthSlider, (v) => {
             if (!lfoVibratoGain) return;
             lfoVibratoGain.min = -v;
             lfoVibratoGain.max = v;
-        });
+        }, 'lfo-vibrato-depth');
 
     }
 
@@ -2144,7 +2150,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const sliders = document.querySelectorAll('input[type="range"]');
             console.log(`Found ${sliders.length} sliders to randomize`);
             
+            // First, find and set the master volume explicitly to 0.2
+            const masterVolumeSlider = document.getElementById('master-volume');
+            if (masterVolumeSlider) {
+                console.log('Setting master volume to 0.2 as requested');
+                masterVolumeSlider.value = 0.2;
+                masterVolumeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            
             sliders.forEach(slider => {
+                // Skip master volume as we've already set it
+                if (slider.id === 'master-volume') return;
+                
                 if (slider.id) { // Skip any sliders without IDs
                     const min = parseFloat(slider.min);
                     const max = parseFloat(slider.max);
@@ -2195,6 +2212,49 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof updateAllDisplays === 'function') {
                 console.log('Updating all displays');
                 updateAllDisplays();
+            }
+            
+            // Ensure envelope components have their actual values updated - important for visualizations
+            if (filterEnv) {
+                // Get current values from sliders
+                const filterAttack = parseFloat(document.getElementById('filter-attack').value);
+                const filterDecay = parseFloat(document.getElementById('filter-decay').value);
+                const filterSustain = parseFloat(document.getElementById('filter-sustain').value);
+                const filterRelease = parseFloat(document.getElementById('filter-release').value);
+                
+                // Apply them directly to the envelope component
+                filterEnv.attack = filterAttack;
+                filterEnv.decay = filterDecay;
+                filterEnv.sustain = filterSustain;
+                filterEnv.release = filterRelease;
+                
+                console.log('Updated filter envelope params:', {
+                    attack: filterAttack,
+                    decay: filterDecay,
+                    sustain: filterSustain,
+                    release: filterRelease
+                });
+            }
+            
+            if (ampEnv) {
+                // Get current values from sliders
+                const ampAttack = parseFloat(document.getElementById('amp-attack').value);
+                const ampDecay = parseFloat(document.getElementById('amp-decay').value);
+                const ampSustain = parseFloat(document.getElementById('amp-sustain').value);
+                const ampRelease = parseFloat(document.getElementById('amp-release').value);
+                
+                // Apply them directly to the envelope component
+                ampEnv.attack = ampAttack;
+                ampEnv.decay = ampDecay;
+                ampEnv.sustain = ampSustain;
+                ampEnv.release = ampRelease;
+                
+                console.log('Updated amp envelope params:', {
+                    attack: ampAttack,
+                    decay: ampDecay,
+                    sustain: ampSustain,
+                    release: ampRelease
+                });
             }
             
             // Redraw envelopes
