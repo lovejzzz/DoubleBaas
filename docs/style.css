@@ -224,17 +224,26 @@ select {
     height: 15px;
     border-radius: 50%;
     background-color: #333;
-    transition: all 0.15s ease;
+    transition: background-color 0.05s ease;
     display: inline-block;
     margin-left: 10px;
     border: 1px solid #666;
+    position: relative;
+    overflow: visible;
 }
 
 .midi-light.active {
     background-color: var(--highlight-color);
-    box-shadow: 0 0 15px var(--highlight-color), 0 0 5px var(--highlight-color);
+    /* Box shadow will be controlled by the animation */
     border-color: var(--highlight-color);
-    transform: scale(1.2);
+    /* Transform will be controlled by the animation */
+}
+
+/* Add a pulse effect for the MIDI light when active */
+@keyframes midi-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 }
 
 /* Envelope Visualization Styles */

@@ -627,8 +627,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentMidiInputId = null;
     }
 
-    // Function to activate the MIDI activity light
-    function activateMidiLight() {
+    // Function to activate the MIDI activity light with ADSR envelope
+    function activateMidiLight(isNoteOn = true) {
         // Get a fresh reference to the light element
         const light = document.getElementById('midi-activity-light');
         if (!light) {
@@ -636,23 +636,89 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Remove any existing timeout
+        // Clear any existing animation or timeout
         if (midiLightTimeout) {
             clearTimeout(midiLightTimeout);
             midiLightTimeout = null;
         }
         
-        // Add active class and ensure it's visible
-        light.style.display = 'block';
-        light.style.opacity = '1';
-        light.classList.add('active');
+        // If animation is running, cancel it
+        if (light.midiAnimation) {
+            light.midiAnimation.cancel();
+            light.midiAnimation = null;
+        }
         
-        // Set new timeout with longer duration for better visibility
-        midiLightTimeout = setTimeout(() => {
-            light.classList.remove('active');
-        }, 250); // Longer flash duration (250ms instead of 150ms)
-        
-        console.log('MIDI activity light activated');
+        // For note-on events, follow the ADSR envelope
+        if (isNoteOn && ampEnv) {
+            // Add active class immediately
+            light.classList.add('active');
+            light.style.opacity = '0';
+            
+            // Get current ADSR values from the amp envelope
+            const attack = parseFloat(ampAttackSlider.value);
+            const decay = parseFloat(ampDecaySlider.value);
+            const sustain = parseFloat(ampSustainSlider.value);
+            const totalAttackDecayTime = attack + decay;
+            
+            // Create animation that follows the attack and decay phases
+            try {
+                const keyframes = [
+                    { opacity: 0, boxShadow: '0 0 5px var(--highlight-color)' },
+                    { opacity: 1, boxShadow: '0 0 15px var(--highlight-color), 0 0 5px var(--highlight-color)', offset: attack / totalAttackDecayTime },
+                    { opacity: sustain, boxShadow: '0 0 10px var(--highlight-color), 0 0 5px var(--highlight-color)' }
+                ];
+                
+                const timing = {
+                    duration: totalAttackDecayTime * 1000, // Convert to milliseconds
+                    easing: 'ease-out',
+                    fill: 'forwards'
+                };
+                
+                // Start the animation and store reference to it
+                light.midiAnimation = light.animate(keyframes, timing);
+                
+                console.log(`MIDI light following ADSR: A=${attack}s, D=${decay}s, S=${sustain}`);
+            } catch (e) {
+                // Fallback if Web Animation API is not supported
+                console.warn('Web Animation API not supported, using fallback for MIDI light', e);
+                light.style.opacity = sustain.toString();
+            }
+        } else {
+            // For note-off or when amplitude envelope isn't available, fade out
+            if (ampEnv) {
+                const release = parseFloat(ampReleaseSlider.value);
+                
+                try {
+                    const keyframes = [
+                        { opacity: light.style.opacity || '1' },
+                        { opacity: 0, boxShadow: '0 0 0 var(--highlight-color)' }
+                    ];
+                    
+                    const timing = {
+                        duration: release * 1000, // Convert to milliseconds
+                        easing: 'ease-out',
+                        fill: 'forwards'
+                    };
+                    
+                    // Start fade-out animation and store reference
+                    light.midiAnimation = light.animate(keyframes, timing);
+                    
+                    // Remove active class after release time
+                    midiLightTimeout = setTimeout(() => {
+                        light.classList.remove('active');
+                    }, release * 1000);
+                    
+                    console.log(`MIDI light release: R=${release}s`);
+                } catch (e) {
+                    // Simple fallback
+                    light.classList.remove('active');
+                    console.warn('Animation API not supported, using fallback for MIDI light fade', e);
+                }
+            } else {
+                // Simple fallback if no envelope
+                light.classList.remove('active');
+            }
+        }
     }
 
     async function handleMIDIMessage(event) {
@@ -664,13 +730,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (audioContext.state !== 'running' || !audioStarted) {
                 console.log('Audio not ready, attempting to initialize...');
                 await ensureAudioContext();
-        if (!audioStarted) {
+                if (!audioStarted) {
                     console.log('Starting audio system from MIDI trigger');
                     await startAudio();
                 }
-        }
-        
-        // Extract MIDI message components
+            }
+
+            // Extract MIDI message components
             const [status, data1, data2] = event.data;
             const command = status >> 4;
             const channel = status & 0xf;
@@ -679,23 +745,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Process MIDI message
             if (audioStarted && audioContext.state === 'running') {
-                // Flash MIDI activity light first
-                activateMidiLight();
-                
                 // Handle different MIDI message types
                 if (command === 9 && data2 > 0) {
-                    // Note On
+                    // Note On - activate MIDI light with note-on
+                    activateMidiLight(true); // Note on
                     console.log(`MIDI Note On: note=${data1}, velocity=${data2/127}`);
                     handleNoteOn(data1, data2 / 127);
                 } else if (command === 8 || (command === 9 && data2 === 0)) {
-                    // Note Off
+                    // Note Off - trigger release phase for MIDI light
+                    activateMidiLight(false); // Note off
                     console.log(`MIDI Note Off: note=${data1}`);
                     handleNoteOff(data1);
                 } else if (command === 11) {
-                    // Control Change
+                    // Control Change - flash MIDI light briefly
+                    const lightFlash = document.getElementById('midi-activity-light');
+                    if (lightFlash) {
+                        lightFlash.classList.add('active');
+                        setTimeout(() => lightFlash.classList.remove('active'), 100);
+                    }
+                    console.log(`MIDI CC: controller=${data1}, value=${data2}`);
                     handleCC(data1, data2);
                 } else if (command === 14) {
-                    // Pitch Bend
+                    // Pitch Bend - flash MIDI light briefly
+                    const lightFlash = document.getElementById('midi-activity-light');
+                    if (lightFlash) {
+                        lightFlash.classList.add('active');
+                        setTimeout(() => lightFlash.classList.remove('active'), 100);
+                    }
                     const pitchValue = ((data2 << 7) + data1 - 8192) / 8192;
                     console.log(`MIDI Pitch Bend: value=${pitchValue.toFixed(3)}`);
                     handlePitchBend(pitchValue);
@@ -1667,6 +1743,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        // Activate the MIDI light with note-off behavior (follow release envelope)
+        activateMidiLight(false);
+        
         // Make sure to cancel any scheduled ramps to avoid stuck notes
         if (vco1 && vco2) {
             try {
@@ -1837,6 +1916,9 @@ document.addEventListener('DOMContentLoaded', () => {
             positionElement.textContent = '';
         }
         
+        // Activate MIDI light with note-on behavior
+        activateMidiLight(true);
+        
         // Trigger the note using the synth's note handling
         handleNoteOn(midiNote, 0.8);
         
@@ -1880,6 +1962,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 positionElement.textContent = '';
             }
         }
+        
+        // Activate MIDI light with note-off behavior (follow release envelope)
+        activateMidiLight(false);
         
         // Trigger note off
         handleNoteOff(midiNote);
@@ -1965,6 +2050,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (positionElement) {
             positionElement.textContent = '';
         }
+        
+        // Activate the MIDI light with note-on behavior
+        activateMidiLight(true);
         
         // Trigger the note using the synth's existing note handling
         handleNoteOn(midiNote, 0.8);
